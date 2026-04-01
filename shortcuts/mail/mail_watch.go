@@ -82,7 +82,7 @@ var MailWatch = common.Shortcut{
 	Description: "Watch for incoming mail events via WebSocket (requires scope mail:event and bot event mail.user_mailbox.event.message_received_v1 added). Run with --print-output-schema to see per-format field reference before parsing output.",
 	Risk:        "read",
 	Scopes:      []string{"mail:event", "mail:user_mailbox.message:readonly", "mail:user_mailbox.message.address:read", "mail:user_mailbox.message.subject:read", "mail:user_mailbox.message.body:read"},
-	AuthTypes:   []string{"user", "bot"},
+	AuthTypes:   []string{"user"},
 	Flags: []common.Flag{
 		{Name: "format", Default: "data", Desc: "json: NDJSON stream with ok/data envelope; data: bare NDJSON stream"},
 		{Name: "msg-format", Default: "metadata", Desc: "message payload mode: metadata(headers + meta, for triage/notification) | minimal(IDs and state only, no headers, for tracking read/folder changes) | plain_text_full(all metadata fields + full plain-text body) | event(raw WebSocket event, no API call, for debug) | full(full message including HTML body and attachments)"},
@@ -256,11 +256,8 @@ var MailWatch = common.Shortcut{
 		}
 
 		// Resolve "me" to the actual email address so we can filter events.
-		// Bot tokens have no personal mailbox; "me" means watch all events.
-		mailboxFilter := ""
-		if mailbox != "me" {
-			mailboxFilter = mailbox
-		} else if !runtime.IsBot() {
+		mailboxFilter := mailbox
+		if mailbox == "me" {
 			resolved, profileErr := fetchMailboxPrimaryEmail(runtime, "me")
 			if profileErr != nil {
 				unsubscribe() //nolint:errcheck // best-effort cleanup; primary error is profileErr
