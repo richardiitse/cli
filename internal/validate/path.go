@@ -9,13 +9,3 @@ import "github.com/larksuite/cli/internal/vfs/localfileio"
 func SafeOutputPath(path string) (string, error) {
 	return localfileio.SafeOutputPath(path)
 }
-
-// SafeInputPath delegates to localfileio.SafeInputPath.
-func SafeInputPath(path string) (string, error) {
-	return localfileio.SafeInputPath(path)
-}
-
-// SafeLocalFlagPath delegates to localfileio.SafeLocalFlagPath.
-func SafeLocalFlagPath(flagName, value string) (string, error) {
-	return localfileio.SafeLocalFlagPath(flagName, value)
-}

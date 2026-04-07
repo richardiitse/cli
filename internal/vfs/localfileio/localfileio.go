@@ -26,13 +26,13 @@ func init() {
 }
 
 // LocalFileIO implements fileio.FileIO using the local filesystem.
-// Path validation (SafeInputPath/SafeOutputPath), directory creation,
+// Path validation (safeInputPath/SafeOutputPath), directory creation,
 // and atomic writes are handled internally.
 type LocalFileIO struct{}
 
 // Open opens a local file for reading after validating the path.
 func (l *LocalFileIO) Open(name string) (fileio.File, error) {
-	safePath, err := SafeInputPath(name)
+	safePath, err := safeInputPath(name)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (l *LocalFileIO) Open(name string) (fileio.File, error) {
 
 // Stat returns file metadata after validating the path.
 func (l *LocalFileIO) Stat(name string) (os.FileInfo, error) {
-	safePath, err := SafeInputPath(name)
+	safePath, err := safeInputPath(name)
 	if err != nil {
 		return nil, err
 	}

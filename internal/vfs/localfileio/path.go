@@ -24,31 +24,31 @@ func SafeOutputPath(path string) (string, error) {
 	return safePath(path, "--output")
 }
 
-// SafeInputPath validates an upload/read source path for --file flags.
+// safeInputPath validates an upload/read source path for --file flags.
 // It applies the same rules as SafeOutputPath — rejecting absolute paths,
 // resolving symlinks, and enforcing working directory containment — to prevent an AI Agent
 // from being tricked into reading sensitive files like /etc/passwd.
-func SafeInputPath(path string) (string, error) {
+func safeInputPath(path string) (string, error) {
 	return safePath(path, "--file")
 }
 
-// SafeLocalFlagPath validates a flag value as a local file path.
+// safeLocalFlagPath validates a flag value as a local file path.
 // Empty values and http/https URLs are returned unchanged without validation,
 // allowing the caller to handle non-path inputs (e.g. API keys, URLs) upstream.
-// For all other values, SafeInputPath rules apply.
+// For all other values, safeInputPath rules apply.
 // The original relative path is returned unchanged (not resolved to absolute) so
 // upload helpers can re-validate at the actual I/O point via SafeUploadPath.
-func SafeLocalFlagPath(flagName, value string) (string, error) {
+func safeLocalFlagPath(flagName, value string) (string, error) {
 	if value == "" || strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
 		return value, nil
 	}
-	if _, err := SafeInputPath(value); err != nil {
+	if _, err := safeInputPath(value); err != nil {
 		return "", fmt.Errorf("%s: %v", flagName, err)
 	}
 	return value, nil
 }
 
-// safePath is the shared implementation for SafeOutputPath and SafeInputPath.
+// safePath is the shared implementation for SafeOutputPath and safeInputPath.
 func safePath(raw, flagName string) (string, error) {
 	if err := rejectControlChars(raw, flagName); err != nil {
 		return "", err
