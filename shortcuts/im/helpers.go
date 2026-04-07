@@ -326,10 +326,6 @@ func resolveURLMedia(ctx context.Context, runtime *common.RuntimeContext, s medi
 func resolveLocalMedia(ctx context.Context, runtime *common.RuntimeContext, s mediaSpec) (string, error) {
 	fmt.Fprintf(runtime.IO().ErrOut, "uploading %s: %s\n", s.mediaType, filepath.Base(s.value))
 
-	if _, err := validate.SafeInputPath(s.value); err != nil {
-		return "", err
-	}
-
 	if s.kind == mediaKindImage {
 		return uploadImageToIM(ctx, runtime, s.value, "message")
 	}

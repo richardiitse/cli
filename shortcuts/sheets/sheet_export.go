@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -63,7 +64,7 @@ var SheetExport = common.Shortcut{
 
 		// Early path validation before any API call
 		if outputPath != "" {
-			if _, err := validate.SafeOutputPath(outputPath); err != nil {
+			if _, err := runtime.FileIO().Stat(outputPath); err != nil && !os.IsNotExist(err) {
 				return output.ErrValidation("unsafe output path: %s", err)
 			}
 		}
