@@ -288,7 +288,11 @@ func downloadMediaFile(ctx context.Context, client *http.Client, downloadURL, mi
 	if err != nil {
 		return nil, output.Errorf(output.ExitInternal, "api_error", "cannot create file: %s", err)
 	}
-	return &downloadResult{savedPath: outputPath, sizeBytes: result.Size()}, nil
+	resolvedPath, _ := opts.fio.ResolvePath(outputPath)
+	if resolvedPath == "" {
+		resolvedPath = outputPath
+	}
+	return &downloadResult{savedPath: resolvedPath, sizeBytes: result.Size()}, nil
 }
 
 // resolveFilenameFromResponse derives the filename from HTTP response headers.

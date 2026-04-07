@@ -106,8 +106,9 @@ func TestRuntimeContext_Out_WithJq_InvalidExpr_WritesStderr(t *testing.T) {
 
 type testResolvedFileIO struct{}
 
-func (testResolvedFileIO) Open(string) (fileio.File, error) { return nil, nil }
-func (testResolvedFileIO) Stat(string) (os.FileInfo, error) { return nil, nil }
+func (testResolvedFileIO) Open(string) (fileio.File, error)            { return nil, nil }
+func (testResolvedFileIO) Stat(string) (os.FileInfo, error)            { return nil, nil }
+func (testResolvedFileIO) ResolvePath(path string) (string, error)     { return path, nil }
 func (testResolvedFileIO) Save(string, fileio.SaveOptions, io.Reader) (fileio.SaveResult, error) {
 	return nil, nil
 }

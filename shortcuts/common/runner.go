@@ -319,8 +319,23 @@ func (ctx *RuntimeContext) FileIO() fileio.FileIO {
 // directory (via FileIO.Stat). Returns nil if the path is valid or does not
 // exist yet; returns an error only for illegal paths (absolute, traversal,
 // symlink escape, control chars).
+// ResolveSavePath returns the validated absolute path for user-facing output.
+// Falls back to the original path if resolution fails (e.g. server mode).
+func (ctx *RuntimeContext) ResolveSavePath(path string) string {
+	if fio := ctx.FileIO(); fio != nil {
+		if resolved, err := fio.ResolvePath(path); err == nil && resolved != "" {
+			return resolved
+		}
+	}
+	return path
+}
+
 func (ctx *RuntimeContext) ValidatePath(path string) error {
-	if _, err := ctx.FileIO().Stat(path); err != nil && !os.IsNotExist(err) {
+	fio := ctx.FileIO()
+	if fio == nil {
+		return fmt.Errorf("no file I/O provider registered")
+	}
+	if _, err := fio.Stat(path); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil

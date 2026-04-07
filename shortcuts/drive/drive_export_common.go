@@ -274,7 +274,11 @@ func saveContentToOutputDir(fio fileio.FileIO, outputDir, fileName string, paylo
 	if _, err := fio.Save(target, fileio.SaveOptions{}, bytes.NewReader(payload)); err != nil {
 		return "", output.Errorf(output.ExitInternal, "io", "cannot write file: %s", err)
 	}
-	return target, nil
+	resolvedPath, _ := fio.ResolvePath(target)
+	if resolvedPath == "" {
+		resolvedPath = target
+	}
+	return resolvedPath, nil
 }
 
 // downloadDriveExportFile downloads the exported artifact, derives a safe local

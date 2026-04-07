@@ -48,6 +48,11 @@ func (l *LocalFileIO) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(safePath)
 }
 
+// ResolvePath returns the validated absolute path for the given output path.
+func (l *LocalFileIO) ResolvePath(path string) (string, error) {
+	return SafeOutputPath(path)
+}
+
 // saveResult implements fileio.SaveResult.
 type saveResult struct{ size int64 }
 

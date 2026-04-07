@@ -120,7 +120,7 @@ var DocMediaDownload = common.Shortcut{
 		}
 
 		runtime.Out(map[string]interface{}{
-			"saved_path":   finalPath,
+			"saved_path":   runtime.ResolveSavePath(finalPath),
 			"size_bytes":   result.Size(),
 			"content_type": resp.Header.Get("Content-Type"),
 		}, nil)

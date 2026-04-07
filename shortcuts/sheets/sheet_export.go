@@ -137,7 +137,7 @@ var SheetExport = common.Shortcut{
 		}
 
 		runtime.Out(map[string]interface{}{
-			"saved_path": outputPath,
+			"saved_path": runtime.ResolveSavePath(outputPath),
 			"size_bytes": result.Size(),
 		}, nil)
 		return nil

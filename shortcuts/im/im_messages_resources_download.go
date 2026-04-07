@@ -178,5 +178,5 @@ func downloadIMResourceToPath(ctx context.Context, runtime *common.RuntimeContex
 	if err != nil {
 		return "", 0, output.Errorf(output.ExitInternal, "api_error", "cannot create file: %s", err)
 	}
-	return finalPath, result.Size(), nil
+	return runtime.ResolveSavePath(finalPath), result.Size(), nil
 }

@@ -128,8 +128,12 @@ func SaveResponse(fio fileio.FileIO, resp *larkcore.ApiResp, outputPath string) 
 		return nil, fmt.Errorf("cannot write file: %s", err)
 	}
 
+	resolvedPath, _ := fio.ResolvePath(outputPath)
+	if resolvedPath == "" {
+		resolvedPath = outputPath
+	}
 	return map[string]interface{}{
-		"saved_path":   outputPath,
+		"saved_path":   resolvedPath,
 		"size_bytes":   result.Size(),
 		"content_type": resp.Header.Get("Content-Type"),
 	}, nil

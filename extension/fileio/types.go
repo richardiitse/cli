@@ -31,6 +31,11 @@ type FileIO interface {
 	// Use os.IsNotExist(err) to distinguish "file not found" from "invalid path".
 	Stat(name string) (os.FileInfo, error)
 
+	// ResolvePath returns the validated, absolute path for the given output path.
+	// The default implementation delegates to SafeOutputPath.
+	// Use this to obtain the canonical saved path for user-facing output.
+	ResolvePath(path string) (string, error)
+
 	// Save writes content to the target path and returns a SaveResult.
 	// The default implementation validates via SafeOutputPath, creates
 	// parent directories, and writes atomically.
