@@ -554,7 +554,6 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 
 	t.Run("batch add", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
-		registerTokenStub(reg)
 		reg.Register(&httpmock.Stub{
 			Method: "POST",
 			URL:    "/open-apis/base/v3/bases/app_x/tables/tbl_x/records/batch",
@@ -577,7 +576,6 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 
 	t.Run("batch set", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
-		registerTokenStub(reg)
 		reg.Register(&httpmock.Stub{
 			Method: "PATCH",
 			URL:    "/open-apis/base/v3/bases/app_x/tables/tbl_x/records/batch",
@@ -600,7 +598,6 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 
 	t.Run("batch set passthrough", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
-		registerTokenStub(reg)
 		updateStub := &httpmock.Stub{
 			Method: "PATCH",
 			URL:    "/open-apis/base/v3/bases/app_x/tables/tbl_x/records/batch",
