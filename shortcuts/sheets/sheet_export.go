@@ -31,6 +31,7 @@ var SheetExport = common.Shortcut{
 		{Name: "file-extension", Desc: "export format: xlsx | csv", Required: true},
 		{Name: "output-path", Desc: "local save path"},
 		{Name: "sheet-id", Desc: "sheet ID (required for CSV)"},
+		{Name: "overwrite", Type: "bool", Desc: "overwrite existing output file"},
 	},
 	Validate: func(ctx context.Context, runtime *common.RuntimeContext) error {
 		token := runtime.Str("spreadsheet-token")
@@ -61,11 +62,16 @@ var SheetExport = common.Shortcut{
 		fileExt := runtime.Str("file-extension")
 		outputPath := runtime.Str("output-path")
 		sheetIdFlag := runtime.Str("sheet-id")
+		overwrite := runtime.Bool("overwrite")
 
 		// Early path validation before any API call
 		if outputPath != "" {
-			if _, err := validate.SafeOutputPath(outputPath); err != nil {
+			safePath, err := validate.SafeOutputPath(outputPath)
+			if err != nil {
 				return output.ErrValidation("unsafe output path: %s", err)
+			}
+			if err := common.EnsureWritableFile(safePath, overwrite); err != nil {
+				return err
 			}
 		}
 
