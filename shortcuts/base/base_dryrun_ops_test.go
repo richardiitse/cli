@@ -65,7 +65,7 @@ func TestDryRunRecordOps(t *testing.T) {
 
 	listRT := newBaseTestRuntimeWithArrays(
 		map[string]string{"base-token": "app_x", "table-id": "tbl_1", "view-id": "viw_1"},
-		map[string][]string{"field": {"Name", "Age"}},
+		map[string][]string{"field-id": {"Name", "Age"}},
 		nil,
 		map[string]int{"offset": -3, "limit": 500},
 	)
@@ -73,7 +73,7 @@ func TestDryRunRecordOps(t *testing.T) {
 
 	commaFieldRT := newBaseTestRuntimeWithArrays(
 		map[string]string{"base-token": "app_x", "table-id": "tbl_1"},
-		map[string][]string{"field": {"A,B", "C"}},
+		map[string][]string{"field-id": {"A,B", "C"}},
 		nil,
 		map[string]int{"limit": 1},
 	)
@@ -87,7 +87,7 @@ func TestDryRunRecordOps(t *testing.T) {
 
 	rt := newBaseTestRuntimeWithArrays(
 		map[string]string{"base-token": "app_x", "table-id": "tbl_1", "record-id": "rec_1", "json": `{"Name":"B"}`},
-		map[string][]string{"field": {"Name", "Age"}},
+		map[string][]string{"field-id": {"Name", "Age"}},
 		nil,
 		map[string]int{"max-version": 11, "page-size": 30},
 	)

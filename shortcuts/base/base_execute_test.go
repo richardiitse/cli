@@ -473,10 +473,9 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 
 	t.Run("list with fields and view", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
-		registerTokenStub(reg)
 		reg.Register(&httpmock.Stub{
 			Method: "GET",
-			URL:    "field=Name&field=Age&limit=1&offset=0&view_id=vew_x",
+			URL:    "field_id=Name&field_id=Age&limit=1&offset=0&view_id=vew_x",
 			Body: map[string]interface{}{
 				"code": 0,
 				"data": map[string]interface{}{
@@ -487,7 +486,7 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 				},
 			},
 		})
-		if err := runShortcut(t, BaseRecordList, []string{"+record-list", "--base-token", "app_x", "--table-id", "tbl_x", "--view-id", "vew_x", "--limit", "1", "--field", "Name", "--field", "Age"}, factory, stdout); err != nil {
+		if err := runShortcut(t, BaseRecordList, []string{"+record-list", "--base-token", "app_x", "--table-id", "tbl_x", "--view-id", "vew_x", "--limit", "1", "--field-id", "Name", "--field-id", "Age"}, factory, stdout); err != nil {
 			t.Fatalf("err=%v", err)
 		}
 		if got := stdout.String(); !strings.Contains(got, `"rec_fields"`) || !strings.Contains(got, `"Alice"`) {
@@ -497,10 +496,9 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 
 	t.Run("list with comma field", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
-		registerTokenStub(reg)
 		reg.Register(&httpmock.Stub{
 			Method: "GET",
-			URL:    "field=A%2CB&field=C&limit=1&offset=0",
+			URL:    "field_id=A%2CB&field_id=C&limit=1&offset=0",
 			Body: map[string]interface{}{
 				"code": 0,
 				"data": map[string]interface{}{
@@ -511,7 +509,7 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 				},
 			},
 		})
-		if err := runShortcut(t, BaseRecordList, []string{"+record-list", "--base-token", "app_x", "--table-id", "tbl_x", "--limit", "1", "--field", "A,B", "--field", "C"}, factory, stdout); err != nil {
+		if err := runShortcut(t, BaseRecordList, []string{"+record-list", "--base-token", "app_x", "--table-id", "tbl_x", "--limit", "1", "--field-id", "A,B", "--field-id", "C"}, factory, stdout); err != nil {
 			t.Fatalf("err=%v", err)
 		}
 		if got := stdout.String(); !strings.Contains(got, `"A,B"`) || !strings.Contains(got, `"rec_json_fields"`) {
@@ -582,7 +580,6 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 
 	t.Run("get with fields", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
-		registerTokenStub(reg)
 		reg.Register(&httpmock.Stub{
 			Method: "GET",
 			URL:    "/open-apis/base/v3/bases/app_x/tables/tbl_x/records/rec_fields?field=Name&field=Age",
@@ -595,7 +592,7 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 				},
 			},
 		})
-		if err := runShortcut(t, BaseRecordGet, []string{"+record-get", "--base-token", "app_x", "--table-id", "tbl_x", "--record-id", "rec_fields", "--field", "Name", "--field", "Age"}, factory, stdout); err != nil {
+		if err := runShortcut(t, BaseRecordGet, []string{"+record-get", "--base-token", "app_x", "--table-id", "tbl_x", "--record-id", "rec_fields", "--field-id", "Name", "--field-id", "Age"}, factory, stdout); err != nil {
 			t.Fatalf("err=%v", err)
 		}
 		if got := stdout.String(); !strings.Contains(got, `"rec_fields"`) || !strings.Contains(got, `"Alice"`) {
@@ -605,7 +602,6 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 
 	t.Run("get with comma field", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
-		registerTokenStub(reg)
 		reg.Register(&httpmock.Stub{
 			Method: "GET",
 			URL:    "/open-apis/base/v3/bases/app_x/tables/tbl_x/records/rec_comma?field=A%2CB",
@@ -618,7 +614,7 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 				},
 			},
 		})
-		if err := runShortcut(t, BaseRecordGet, []string{"+record-get", "--base-token", "app_x", "--table-id", "tbl_x", "--record-id", "rec_comma", "--field", "A,B"}, factory, stdout); err != nil {
+		if err := runShortcut(t, BaseRecordGet, []string{"+record-get", "--base-token", "app_x", "--table-id", "tbl_x", "--record-id", "rec_comma", "--field-id", "A,B"}, factory, stdout); err != nil {
 			t.Fatalf("err=%v", err)
 		}
 		if got := stdout.String(); !strings.Contains(got, `"A,B"`) || !strings.Contains(got, `"rec_comma"`) {

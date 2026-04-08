@@ -17,7 +17,7 @@ func dryRunRecordList(_ context.Context, runtime *common.RuntimeContext) *common
 	limit := common.ParseIntBounded(runtime, "limit", 1, 200)
 	params := map[string]interface{}{"offset": offset, "limit": limit}
 	if fields := recordFields(runtime); len(fields) > 0 {
-		params["field"] = fields
+		params["field_id"] = fields
 	}
 	if viewID := runtime.Str("view-id"); viewID != "" {
 		params["view_id"] = viewID
@@ -87,7 +87,7 @@ func validateRecordJSON(runtime *common.RuntimeContext) error {
 }
 
 func recordFields(runtime *common.RuntimeContext) []string {
-	return runtime.StrArray("field")
+	return runtime.StrArray("field-id")
 }
 
 func executeRecordList(runtime *common.RuntimeContext) error {
@@ -99,7 +99,7 @@ func executeRecordList(runtime *common.RuntimeContext) error {
 	params := map[string]interface{}{"offset": offset, "limit": limit}
 	fields := recordFields(runtime)
 	if len(fields) > 0 {
-		params["field"] = fields
+		params["field_id"] = fields
 	}
 	if viewID := runtime.Str("view-id"); viewID != "" {
 		params["view_id"] = viewID
