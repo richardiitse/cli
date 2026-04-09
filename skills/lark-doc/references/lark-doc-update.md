@@ -169,9 +169,11 @@ lark-cli docs +update --doc "<doc_id>" --command str_replace \
   1. 用 `block_insert` 在目标位置插入新的富文本结构
   2. 用 `block_delete` 批量删除旧的 block
   3. 这样可以保留文档中其他不相关的内容（图片、评论等）
+- **视觉丰富度**：插入或替换内容时，同样遵循 [`lark-doc-style.md`](lark-doc-style.md) 中的样式指南，主动使用结构化 block
 
 ## 参考
 
+- [`lark-doc-style.md`](lark-doc-style.md) — 文档样式指南（元素选择 + 丰富度规则 + 颜色语义）
 - [`lark-doc-xml.md`](lark-doc-xml.md) — XML 语法规范
 - [`lark-doc-fetch.md`](lark-doc-fetch.md) — 获取文档
 - [`lark-doc-create.md`](lark-doc-create.md) — 创建文档
