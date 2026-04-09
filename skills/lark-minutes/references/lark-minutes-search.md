@@ -23,7 +23,7 @@
 # 关键词搜索
 lark-cli minutes +search --query "预算复盘"
 
-# 查询某一天内的妙记（单日查询时，start 和 end 必须填写同一天）
+# 查询某一天内的妙记（单日查询时，建议将 start 和 end 都填写为同一天）
 lark-cli minutes +search --start 2026-03-10 --end 2026-03-10
 
 # 按时间范围搜索
@@ -84,6 +84,7 @@ lark-cli minutes +search --query "预算复盘" --format json
 ### 3. `me` 表示当前用户
 
 在 `--owner-ids` 和 `--participant-ids` 中可使用 `me`，表示当前登录用户。该值会在本地解析为当前用户的 `open_id`，无需手动先查询自己的用户 ID。
+若当前环境尚未完成用户登录，或 CLI 无法解析出当前用户的 `open_id`，则应先执行 `lark-cli auth login`，再重新执行搜索。
 
 ### 4. 长时间范围优先拆分查询
 
@@ -97,6 +98,7 @@ lark-cli minutes +search --query "预算复盘" --format json
 ### 6. 日期型 `--end` 包含当天整天
 
 当 `--end` 传入的是仅日期格式（如 `2026-03-10`）时，CLI 会将它解释为当天 `23:59:59`，而不是当天 `00:00:00`。
+CLI 会先按输入的本地日历日语义解析，再标准化为 RFC3339 时间戳发给 API；在 dry-run 或排查请求体时，看到的 `Z` 结尾时间表示同一个绝对时间点的 UTC 表示，不改变“按当天整天查询”的语义。
 
 这意味着：
 
@@ -166,8 +168,8 @@ lark-cli vc +notes --minute-tokens obcnhijv43vq6bcsl5xasfb2
 | ---------------------- | --------------------------------- | --------------------------- |
 | 命令直接报错，要求提供过滤条件        | 没有传入 `--query`、时间范围或任何过滤 ID       | 至少补充一个过滤条件后重试               |
 | 时间参数校验失败               | `--start` 或 `--end` 格式不合法         | 改用 ISO 8601 或 `YYYY-MM-DD`  |
-| `owner-ids` 校验失败       | 传入的不是 open\_id，且也不是 `me`          | 改为 `ou_` 开头的用户 ID，或直接传 `me` |
-| `participant-ids` 校验失败 | 传入的不是 open\_id，且也不是 `me`          | 改为 `ou_` 开头的用户 ID，或直接传 `me` |
+| `owner-ids` 校验失败       | 传入的不是 open\_id，且也不是 `me`；或传了 `me` 但当前用户 open\_id 不可解析 | 改为 `ou_` 开头的用户 ID，或先完成 `auth login` 后再传 `me` |
+| `participant-ids` 校验失败 | 传入的不是 open\_id，且也不是 `me`；或传了 `me` 但当前用户 open\_id 不可解析 | 改为 `ou_` 开头的用户 ID，或先完成 `auth login` 后再传 `me` |
 | 权限不足                   | 未授权 `minutes:minutes.search:read` | 使用 `auth login` 完成授权        |
 
 ## 提示

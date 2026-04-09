@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/larksuite/cli/internal/cmdutil"
+	"github.com/larksuite/cli/internal/core"
 	"github.com/larksuite/cli/internal/httpmock"
 	"github.com/larksuite/cli/shortcuts/common"
 	"github.com/spf13/cobra"
@@ -25,6 +26,12 @@ func newMinutesSearchTestCommand() *cobra.Command {
 	cmd.Flags().String("page-token", "", "")
 	cmd.Flags().String("page-size", "15", "")
 	return cmd
+}
+
+func configWithoutUserOpenID() *core.CliConfig {
+	cfg := defaultConfig()
+	cfg.UserOpenId = ""
+	return cfg
 }
 
 func TestMinutesSearchParseTimeRange(t *testing.T) {
@@ -94,7 +101,10 @@ func TestBuildMinutesSearchParams(t *testing.T) {
 
 	runtime := common.TestNewRuntimeContext(cmd, defaultConfig())
 	params := buildMinutesSearchParams(runtime)
-	body := buildMinutesSearchBody(runtime, "2026-03-24T00:00:00Z", "2026-03-25T00:00:00Z")
+	body, err := buildMinutesSearchBody(runtime, "2026-03-24T00:00:00Z", "2026-03-25T00:00:00Z")
+	if err != nil {
+		t.Fatalf("buildMinutesSearchBody() unexpected error: %v", err)
+	}
 
 	if got := params.Get("page_size"); got != "5" {
 		t.Fatalf("page_size = %q, want 5", got)
@@ -146,17 +156,26 @@ func TestResolveUserIDs(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	runtime := common.TestNewRuntimeContext(cmd, defaultConfig())
 
-	got := resolveUserIDs([]string{"me"}, runtime)
+	got, err := resolveUserIDs("--owner-ids", []string{"me"}, runtime)
+	if err != nil {
+		t.Fatalf("resolveUserIDs([me]) unexpected error: %v", err)
+	}
 	if len(got) != 1 || got[0] != "ou_testuser" {
 		t.Fatalf("resolveUserIDs([me]) = %v, want [ou_testuser]", got)
 	}
 
-	got = resolveUserIDs([]string{"ou_other", "me", "Me"}, runtime)
+	got, err = resolveUserIDs("--owner-ids", []string{"ou_other", "me", "Me"}, runtime)
+	if err != nil {
+		t.Fatalf("resolveUserIDs([ou_other, me, Me]) unexpected error: %v", err)
+	}
 	if len(got) != 2 || got[0] != "ou_other" || got[1] != "ou_testuser" {
 		t.Fatalf("resolveUserIDs([ou_other, me, Me]) = %v, want [ou_other ou_testuser]", got)
 	}
 
-	got = resolveUserIDs(nil, runtime)
+	got, err = resolveUserIDs("--owner-ids", nil, runtime)
+	if err != nil {
+		t.Fatalf("resolveUserIDs(nil) unexpected error: %v", err)
+	}
 	if got != nil {
 		t.Fatalf("resolveUserIDs(nil) = %v, want nil", got)
 	}
@@ -187,6 +206,37 @@ func TestMinutesSearchValidationMeOwnerID(t *testing.T) {
 	}
 }
 
+func TestMinutesSearchValidationMeRequiresResolvableUser(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		flag string
+	}{
+		{name: "owner ids", flag: "owner-ids"},
+		{name: "participant ids", flag: "participant-ids"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cmd := newMinutesSearchTestCommand()
+			_ = cmd.Flags().Set(tt.flag, "me")
+
+			runtime := common.TestNewRuntimeContext(cmd, configWithoutUserOpenID())
+			err := MinutesSearch.Validate(context.Background(), runtime)
+			if err == nil {
+				t.Fatal("expected validation error for unresolved me")
+			}
+			if !strings.Contains(err.Error(), "resolvable open_id") {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
 func TestBuildMinutesSearchFilterMeExpansion(t *testing.T) {
 	t.Parallel()
 
@@ -195,7 +245,10 @@ func TestBuildMinutesSearchFilterMeExpansion(t *testing.T) {
 	_ = cmd.Flags().Set("participant-ids", "me")
 
 	runtime := common.TestNewRuntimeContext(cmd, defaultConfig())
-	body := buildMinutesSearchBody(runtime, "", "")
+	body, err := buildMinutesSearchBody(runtime, "", "")
+	if err != nil {
+		t.Fatalf("buildMinutesSearchBody() unexpected error: %v", err)
+	}
 
 	filter, _ := body["filter"].(map[string]interface{})
 	if filter == nil {
@@ -418,6 +471,8 @@ func TestMinutesSearchExecuteRendersRowsAndMoreHint(t *testing.T) {
 }
 
 func TestMinutesSearchExecuteNoMinutes(t *testing.T) {
+	t.Parallel()
+
 	f, stdout, _, reg := cmdutil.TestFactory(t, defaultConfig())
 	reg.Register(&httpmock.Stub{
 		Method: "POST",
@@ -441,6 +496,94 @@ func TestMinutesSearchExecuteNoMinutes(t *testing.T) {
 	reg.Verify(t)
 	if !strings.Contains(stdout.String(), "No minutes.") {
 		t.Fatalf("expected no minutes message, got: %s", stdout.String())
+	}
+}
+
+func TestMinutesSearchExecuteShowsPaginationHintForTableFormat(t *testing.T) {
+	t.Parallel()
+
+	f, stdout, _, reg := cmdutil.TestFactory(t, defaultConfig())
+	reg.Register(&httpmock.Stub{
+		Method: "POST",
+		URL:    "/open-apis/minutes/v1/minutes/search",
+		Body: map[string]interface{}{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]interface{}{
+				"items": []interface{}{
+					map[string]interface{}{
+						"token":        "minute_1",
+						"display_info": "周会摘要",
+						"meta_data": map[string]interface{}{
+							"description": "周会纪要",
+							"app_link":    "https://meetings.feishu.cn/minutes/obcn123",
+							"avatar":      "https://p3-lark-file.byteimg.com/img/xxxx.jpg",
+						},
+					},
+				},
+				"total":      1,
+				"has_more":   true,
+				"page_token": "next_token",
+			},
+		},
+	})
+
+	err := mountAndRun(t, MinutesSearch, []string{"+search", "--query", "budget", "--format", "table", "--as", "user"}, f, stdout)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	reg.Verify(t)
+
+	out := stdout.String()
+	if !strings.Contains(out, "next_token") || !strings.Contains(out, "more available") {
+		t.Fatalf("expected pagination hint in table output, got: %s", out)
+	}
+}
+
+func TestMinutesSearchExecuteJSONCountUsesRenderedRows(t *testing.T) {
+	t.Parallel()
+
+	f, stdout, _, reg := cmdutil.TestFactory(t, defaultConfig())
+	reg.Register(&httpmock.Stub{
+		Method: "POST",
+		URL:    "/open-apis/minutes/v1/minutes/search",
+		Body: map[string]interface{}{
+			"code": 0,
+			"msg":  "ok",
+			"data": map[string]interface{}{
+				"items": []interface{}{
+					nil,
+					map[string]interface{}{
+						"token":        "minute_1",
+						"display_info": "周会摘要",
+						"meta_data": map[string]interface{}{
+							"description": "周会纪要",
+						},
+					},
+				},
+				"total":      2,
+				"has_more":   false,
+				"page_token": "",
+			},
+		},
+	})
+
+	err := mountAndRun(t, MinutesSearch, []string{"+search", "--query", "budget", "--as", "user"}, f, stdout)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	reg.Verify(t)
+
+	var envelope struct {
+		Meta struct {
+			Count int `json:"count"`
+		} `json:"meta"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("failed to parse output: %v\nraw: %s", err, stdout.String())
+	}
+	if envelope.Meta.Count != 1 {
+		t.Fatalf("meta.count = %d, want 1", envelope.Meta.Count)
 	}
 }
 

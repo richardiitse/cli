@@ -24,6 +24,7 @@ const (
 	maxMinutesSearchQueryLen     = 50
 )
 
+// parseTimeRange normalizes --start and --end into RFC3339 timestamps.
 func parseTimeRange(runtime *common.RuntimeContext) (string, string, error) {
 	start := strings.TrimSpace(runtime.Str("start"))
 	end := strings.TrimSpace(runtime.Str("end"))
@@ -47,8 +48,14 @@ func parseTimeRange(runtime *common.RuntimeContext) (string, string, error) {
 		endTime = parsed
 	}
 	if startTime != "" && endTime != "" {
-		st, _ := time.Parse(time.RFC3339, startTime)
-		et, _ := time.Parse(time.RFC3339, endTime)
+		st, err := time.Parse(time.RFC3339, startTime)
+		if err != nil {
+			return "", "", fmt.Errorf("parse normalized --start: %w", err)
+		}
+		et, err := time.Parse(time.RFC3339, endTime)
+		if err != nil {
+			return "", "", fmt.Errorf("parse normalized --end: %w", err)
+		}
 		if st.After(et) {
 			return "", "", output.ErrValidation("--start (%s) is after --end (%s)", start, end)
 		}
@@ -56,6 +63,7 @@ func parseTimeRange(runtime *common.RuntimeContext) (string, string, error) {
 	return startTime, endTime, nil
 }
 
+// toRFC3339 converts a supported CLI time input into an RFC3339 timestamp.
 func toRFC3339(input string, hint ...string) (string, error) {
 	ts, err := common.ParseTime(input, hint...)
 	if err != nil {
@@ -68,15 +76,19 @@ func toRFC3339(input string, hint ...string) (string, error) {
 	return time.Unix(sec, 0).Format(time.RFC3339), nil
 }
 
-func resolveUserIDs(ids []string, runtime *common.RuntimeContext) []string {
+// resolveUserIDs expands special user identifiers and removes duplicates.
+func resolveUserIDs(flagName string, ids []string, runtime *common.RuntimeContext) ([]string, error) {
 	if len(ids) == 0 {
-		return nil
+		return nil, nil
 	}
 	currentUserID := runtime.UserOpenId()
 	seen := make(map[string]struct{}, len(ids))
 	out := make([]string, 0, len(ids))
 	for _, id := range ids {
-		if strings.EqualFold(id, "me") && currentUserID != "" {
+		if strings.EqualFold(id, "me") {
+			if currentUserID == "" {
+				return nil, output.ErrValidation("%s: \"me\" requires a logged-in user with a resolvable open_id", flagName)
+			}
 			id = currentUserID
 		}
 		if _, ok := seen[id]; ok {
@@ -85,9 +97,10 @@ func resolveUserIDs(ids []string, runtime *common.RuntimeContext) []string {
 		seen[id] = struct{}{}
 		out = append(out, id)
 	}
-	return out
+	return out, nil
 }
 
+// buildTimeFilter builds the create_time filter block for the API request.
 func buildTimeFilter(startTime, endTime string) map[string]interface{} {
 	if startTime == "" && endTime == "" {
 		return nil
@@ -102,15 +115,22 @@ func buildTimeFilter(startTime, endTime string) map[string]interface{} {
 	return timeRange
 }
 
-func buildMinutesSearchFilter(runtime *common.RuntimeContext, startTime, endTime string) map[string]interface{} {
+// buildMinutesSearchFilter builds the filter object for the API request body.
+func buildMinutesSearchFilter(runtime *common.RuntimeContext, startTime, endTime string) (map[string]interface{}, error) {
 	filter := map[string]interface{}{}
 
-	ownerIDs := resolveUserIDs(common.SplitCSV(runtime.Str("owner-ids")), runtime)
+	ownerIDs, err := resolveUserIDs("--owner-ids", common.SplitCSV(runtime.Str("owner-ids")), runtime)
+	if err != nil {
+		return nil, err
+	}
 	if len(ownerIDs) > 0 {
 		filter["owner_ids"] = ownerIDs
 	}
 
-	participantIDs := resolveUserIDs(common.SplitCSV(runtime.Str("participant-ids")), runtime)
+	participantIDs, err := resolveUserIDs("--participant-ids", common.SplitCSV(runtime.Str("participant-ids")), runtime)
+	if err != nil {
+		return nil, err
+	}
 	if len(participantIDs) > 0 {
 		filter["participant_ids"] = participantIDs
 	}
@@ -120,25 +140,31 @@ func buildMinutesSearchFilter(runtime *common.RuntimeContext, startTime, endTime
 	}
 
 	if len(filter) == 0 {
-		return nil
+		return nil, nil
 	}
-	return filter
+	return filter, nil
 }
 
-func buildMinutesSearchBody(runtime *common.RuntimeContext, startTime, endTime string) map[string]interface{} {
+// buildMinutesSearchBody builds the POST body for the minutes search API.
+func buildMinutesSearchBody(runtime *common.RuntimeContext, startTime, endTime string) (map[string]interface{}, error) {
 	body := map[string]interface{}{}
 
 	if q := strings.TrimSpace(runtime.Str("query")); q != "" {
 		body["query"] = q
 	}
 
-	if filter := buildMinutesSearchFilter(runtime, startTime, endTime); filter != nil {
+	filter, err := buildMinutesSearchFilter(runtime, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	if filter != nil {
 		body["filter"] = filter
 	}
 
-	return body
+	return body, nil
 }
 
+// buildMinutesSearchParams builds the query parameters for the search request.
 func buildMinutesSearchParams(runtime *common.RuntimeContext) larkcore.QueryParams {
 	params := larkcore.QueryParams{}
 
@@ -155,33 +181,59 @@ func buildMinutesSearchParams(runtime *common.RuntimeContext) larkcore.QueryPara
 	return params
 }
 
+// minuteSearchItems extracts the result items from the API response payload.
 func minuteSearchItems(data map[string]interface{}) []interface{} {
 	return common.GetSlice(data, "items")
 }
 
+// minuteSearchToken extracts the minute token from a search result item.
 func minuteSearchToken(item map[string]interface{}) string {
 	return common.GetString(item, "token")
 }
 
+// minuteSearchDisplayInfo extracts the display_info field from a search result item.
 func minuteSearchDisplayInfo(item map[string]interface{}) string {
 	return common.GetString(item, "display_info")
 }
 
+// minuteSearchDescription extracts the description field from a search result item.
 func minuteSearchDescription(item map[string]interface{}) string {
 	meta := common.GetMap(item, "meta_data")
 	return common.GetString(meta, "description")
 }
 
+// minuteSearchAppLink extracts the app link from a search result item.
 func minuteSearchAppLink(item map[string]interface{}) string {
 	meta := common.GetMap(item, "meta_data")
 	return common.GetString(meta, "app_link")
 }
 
+// minuteSearchAvatar extracts the avatar URL from a search result item.
 func minuteSearchAvatar(item map[string]interface{}) string {
 	meta := common.GetMap(item, "meta_data")
 	return common.GetString(meta, "avatar")
 }
 
+// buildMinuteSearchRows converts API items into pretty output rows.
+func buildMinuteSearchRows(items []interface{}) []map[string]interface{} {
+	rows := make([]map[string]interface{}, 0, len(items))
+	for _, raw := range items {
+		item, _ := raw.(map[string]interface{})
+		if item == nil {
+			continue
+		}
+		rows = append(rows, map[string]interface{}{
+			"token":        minuteSearchToken(item),
+			"display_info": common.TruncateStr(minuteSearchDisplayInfo(item), 40),
+			"description":  common.TruncateStr(minuteSearchDescription(item), 40),
+			"app_link":     common.TruncateStr(minuteSearchAppLink(item), 80),
+			"avatar":       common.TruncateStr(minuteSearchAvatar(item), 80),
+		})
+	}
+	return rows
+}
+
+// MinutesSearch searches minutes by keyword, owners, participants, and time range.
 var MinutesSearch = common.Shortcut{
 	Service:     "minutes",
 	Command:     "+search",
@@ -209,12 +261,20 @@ var MinutesSearch = common.Shortcut{
 		if _, err := common.ValidatePageSize(runtime, "page-size", defaultMinutesSearchPageSize, 1, maxMinutesSearchPageSize); err != nil {
 			return err
 		}
-		for _, id := range resolveUserIDs(common.SplitCSV(runtime.Str("owner-ids")), runtime) {
+		ownerIDs, err := resolveUserIDs("--owner-ids", common.SplitCSV(runtime.Str("owner-ids")), runtime)
+		if err != nil {
+			return err
+		}
+		for _, id := range ownerIDs {
 			if _, err := common.ValidateUserID(id); err != nil {
 				return err
 			}
 		}
-		for _, id := range resolveUserIDs(common.SplitCSV(runtime.Str("participant-ids")), runtime) {
+		participantIDs, err := resolveUserIDs("--participant-ids", common.SplitCSV(runtime.Str("participant-ids")), runtime)
+		if err != nil {
+			return err
+		}
+		for _, id := range participantIDs {
 			if _, err := common.ValidateUserID(id); err != nil {
 				return err
 			}
@@ -232,6 +292,10 @@ var MinutesSearch = common.Shortcut{
 			return common.NewDryRunAPI().Set("error", err.Error())
 		}
 		params := buildMinutesSearchParams(runtime)
+		body, err := buildMinutesSearchBody(runtime, startTime, endTime)
+		if err != nil {
+			return common.NewDryRunAPI().Set("error", err.Error())
+		}
 		dryRunParams := map[string]interface{}{}
 		for key, values := range params {
 			if len(values) == 1 {
@@ -243,22 +307,19 @@ var MinutesSearch = common.Shortcut{
 		if len(dryRunParams) > 0 {
 			dryRun.Params(dryRunParams)
 		}
-		return dryRun.Body(buildMinutesSearchBody(runtime, startTime, endTime))
+		return dryRun.Body(body)
 	},
 	Execute: func(ctx context.Context, runtime *common.RuntimeContext) error {
 		startTime, endTime, err := parseTimeRange(runtime)
 		if err != nil {
 			return err
 		}
-
-		params := map[string]interface{}{}
-		pageSize, _ := strconv.Atoi(buildMinutesSearchParams(runtime).Get("page_size"))
-		params["page_size"] = pageSize
-		if pageToken := strings.TrimSpace(runtime.Str("page-token")); pageToken != "" {
-			params["page_token"] = pageToken
+		body, err := buildMinutesSearchBody(runtime, startTime, endTime)
+		if err != nil {
+			return err
 		}
 
-		data, err := runtime.CallAPI(http.MethodPost, "/open-apis/minutes/v1/minutes/search", params, buildMinutesSearchBody(runtime, startTime, endTime))
+		data, err := runtime.DoAPIJSON(http.MethodPost, "/open-apis/minutes/v1/minutes/search", buildMinutesSearchParams(runtime), body)
 		if err != nil {
 			return err
 		}
@@ -269,6 +330,7 @@ var MinutesSearch = common.Shortcut{
 		items := minuteSearchItems(data)
 		hasMore, _ := data["has_more"].(bool)
 		pageToken, _ := data["page_token"].(string)
+		rows := buildMinuteSearchRows(items)
 
 		outData := map[string]interface{}{
 			"items":      items,
@@ -277,31 +339,16 @@ var MinutesSearch = common.Shortcut{
 			"page_token": data["page_token"],
 		}
 
-		runtime.OutFormat(outData, &output.Meta{Count: len(items)}, func(w io.Writer) {
-			if len(items) == 0 {
+		runtime.OutFormat(outData, &output.Meta{Count: len(rows)}, func(w io.Writer) {
+			if len(rows) == 0 {
 				fmt.Fprintln(w, "No minutes.")
 				return
 			}
-
-			var rows []map[string]interface{}
-			for _, raw := range items {
-				item, _ := raw.(map[string]interface{})
-				if item == nil {
-					continue
-				}
-				rows = append(rows, map[string]interface{}{
-					"token":        minuteSearchToken(item),
-					"display_info": common.TruncateStr(minuteSearchDisplayInfo(item), 40),
-					"description":  common.TruncateStr(minuteSearchDescription(item), 40),
-					"app_link":     common.TruncateStr(minuteSearchAppLink(item), 80),
-					"avatar":       common.TruncateStr(minuteSearchAvatar(item), 80),
-				})
-			}
 			output.PrintTable(w, rows)
-			if hasMore {
-				fmt.Fprintf(w, "\n(more available, page_token: %s)\n", pageToken)
-			}
 		})
+		if hasMore && runtime.Format != "json" && runtime.Format != "" {
+			fmt.Fprintf(runtime.IO().Out, "\n(more available, page_token: %s)\n", pageToken)
+		}
 		return nil
 	},
 }
