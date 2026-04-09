@@ -22,14 +22,14 @@ p, h1-h9, ul, ol, li, table, thead, tbody, tr, th, td, blockquote, pre, code, hr
 ## 行内组件
 | 标签 | 说明 | 关键属性 |
 |-------------------------|-|-|
-| `<cite type="user">` | @人 | `<cite type="user" user-id="张三"></cite>` |
-| `<cite type="doc">` | @文档 | `<cite type="doc" doc-id="需求文档"></cite>` |
+| `<cite type="user">` | @人 | `<cite type="user" user-id="userID"></cite>` |
+| `<cite type="doc">` | @文档 | `<cite type="doc" doc-id="docx_token"></cite>` |
 | `<latex>` | 行内公式 | `<latex>E = mc^2</latex>` |
 | `<img>` | 图片（可独立成块或内联） | `<img width="800" height="600" caption="说明" name="图.png" href="http 或 https"/>` |
 | `<source>` | 文件附件（可独立成块或内联） | `<source name="报告.pdf"/>` |
 | `<a type="url-preview">` | 预览卡片 | `<a type="url-preview" href="...">标题</a>` |
-| `<button>` | 操作按钮 | `background-color`,`action` |
-| `<time>` | 提醒 | |
+| `<button>` | 操作按钮 | `background-color`,必须包含 `action=OpenLink|DuplicatePage|FollowPage` |
+| `<time>` | 提醒 | `必包含 expire-time、notify-time=毫秒时间戳、should-notify=true|false` |
 
 ## 文本块通用属性
 - `align` — `"left"`|`"center"`|`"right"`（适用于 p / h1-h9 / li / checkbox）
@@ -157,7 +157,7 @@ p, h1-h9, ul, ol, li, table, thead, tbody, tr, th, td, blockquote, pre, code, hr
 <p>图片：<img width="800" height="400" caption="架构图" name="arch.png"/></p>
 <p>网络图片：<img href="https://example.com/photo.png"/></p>
 <p>操作：<button background-color="blue">打开面板</button></p>
-<p>提醒：<time>本周五下午截止</time></p>
+<p>提醒：<time expire-time="1775916000000" notify-time="1775912400000" should-notify="false">xx时间截止</time></p>
 <p>工单：<cite type="jira-issue">PROJ-456</cite></p>
 <p>引文：<cite type="citation"><a href="https://example.com">参考文献 1</a></cite></p>
 ```

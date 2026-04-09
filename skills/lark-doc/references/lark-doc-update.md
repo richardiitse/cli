@@ -162,9 +162,13 @@ lark-cli docs +update --doc "<doc_id>" --command str_replace \
 
 - **精确操作优于全文覆盖**：使用 `block_replace`/`block_insert` 精确修改，避免 `overwrite` 全文覆盖
 - **保护不可重建的内容**：图片、画板、电子表格等以 token 形式存储，替换时避开这些 block
-- **str_replace 的 replacement 支持富文本**：可以用行内标签 `<b>`、`<a>` 等替换普通文本为富文本
+- **str_replace 的 replacement 支持富文本**：可以用行内标签 `<b>`、`<a>`、`<cite>`、`<latex>` 等替换普通文本为富文本
 - **同一 block 只能被 replace 一次**：多次修改同一 block 请合并为一次 block_replace
 - **block_delete 支持批量**：用逗号分隔多个 block_id 一次删除
+- **复杂结构重组**：将多个段落转换为 grid / table 等复杂布局时，分步操作比 overwrite 更安全：
+  1. 用 `block_insert` 在目标位置插入新的富文本结构
+  2. 用 `block_delete` 批量删除旧的 block
+  3. 这样可以保留文档中其他不相关的内容（图片、评论等）
 
 ## 参考
 
