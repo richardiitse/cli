@@ -11,14 +11,14 @@ lark-cli base +view-set-visible-fields \
   --base-token XXXXXX \
   --table-id tblXXX \
   --view-id vewXXX \
-  --json '{"visible_fields":["标题","fld_status"]}'
+  --json '{"visible_fields":["标题","fldXXX"]}'
 ```
 
 ## JSON 结构
 
 ```json
 {
-  "visible_fields": ["标题", "fld_status"]
+  "visible_fields": ["标题", "fldXXX"]
 }
 ```
 
@@ -43,7 +43,7 @@ PUT /open-apis/base/v3/bases/:base_token/tables/:table_id/views/:view_id/visible
 
 ```json
 {
-  "visible_fields": ["标题", "fld_status"]
+  "visible_fields": ["标题", "fldXXX"]
 }
 ```
 
