@@ -1,14 +1,16 @@
 
 # docs +update（更新飞书云文档）
 
-> **前置条件：** 先阅读 [`../lark-shared/SKILL.md`](../../lark-shared/SKILL.md) 了解认证、全局参数和安全规则。
+> **前置条件（MUST READ）：** 生成文档内容前，必须先用 Read 工具读取以下文件，缺一不可：
+> 1. [`../lark-shared/SKILL.md`](../../lark-shared/SKILL.md) — 认证、全局参数和安全规则
+> 2. [`lark-doc-xml.md`](lark-doc-xml.md) — XML 语法规则（使用 Markdown 格式时改读 [`lark-doc-md.md`](lark-doc-md.md)）
+> 3. [`lark-doc-style.md`](style/lark-doc-style.md) — 排版指南（元素选择、丰富度规则、颜色语义）
+>
+> **未读完以上文件就生成内容会导致格式错误或样式不达标。**
 
 通过七种指令精确更新飞书云文档。支持字符串级别和 block 级别的操作。
 
 > **⚠️ 格式选择规则：始终使用 XML 格式（默认），除非用户明确要求使用 Markdown。** 不要因为 Markdown 写起来更简单就自行切换为 Markdown。
-
-1. 使用 XML 格式时，必须先读取 [`lark-doc-xml.md`](lark-doc-xml.md) 中的语法规则。
-2. 使用 Markdown 格式时，必须先读取 [`lark-doc-md.md`](lark-doc-md.md) 中的转义规则。
 
 ## 参数
 

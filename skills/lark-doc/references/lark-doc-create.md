@@ -1,13 +1,15 @@
 # docs +create（创建飞书云文档）
 
-> **前置条件：** 先阅读 [`../lark-shared/SKILL.md`](../../lark-shared/SKILL.md) 了解认证、全局参数和安全规则。
+> **前置条件（MUST READ）：** 生成文档内容前，必须先用 Read 工具读取以下文件，缺一不可：
+> 1. [`../lark-shared/SKILL.md`](../../lark-shared/SKILL.md) — 认证、全局参数和安全规则
+> 2. [`lark-doc-xml.md`](lark-doc-xml.md) — XML 语法规则（使用 Markdown 格式时改读 [`lark-doc-md.md`](lark-doc-md.md)）
+> 3. [`lark-doc-style.md`](style/lark-doc-style.md) — 排版指南（元素选择、丰富度规则、颜色语义）
+>
+> **未读完以上文件就生成内容会导致格式错误或样式不达标。**
 
 从 XML（默认）或 Markdown 内容创建一个新的飞书云文档。
 
 > **⚠️ 格式选择规则：始终使用 XML 格式（默认），除非用户明确要求使用 Markdown。** XML 表达能力更强、支持更多 block 类型（callout、grid、checkbox 等），是推荐的首选格式。不要因为 Markdown 写起来更简单就自行切换为 Markdown。
-
-1. 使用 XML 格式创建时，必须先读取 [`lark-doc-xml.md`](lark-doc-xml.md) 中的语法规则。
-2. 使用 Markdown 格式创建时，必须先读取 [`lark-doc-md.md`](lark-doc-md.md) 中的转义规则。
 
 ## 命令
 
