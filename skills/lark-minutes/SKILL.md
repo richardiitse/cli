@@ -1,7 +1,7 @@
 ---
 name: lark-minutes
 version: 1.0.0
-description: "飞书妙记：查询妙记列表、获取妙记基本信息。1.查询妙记列表（按关键词/所有者/参与者/时间范围）；2.获取妙记基础信息（标题、封面、时长、owner 等）；3.下载妙记音视频文件。妙记 URL 格式: http(s)://<host>/minutes/<minute-token>"
+description: "飞书妙记：妙记相关基本功能。1.查询妙记列表（按关键词/所有者/参与者/时间范围）；2.获取妙记基础信息（标题、封面、时长 等）；3.下载妙记音视频文件；4.获取妙记相关 AI 产物（总结、待办、章节）。飞书妙记 URL 格式: http(s)://<host>/minutes/<minute-token>"
 metadata:
   requires:
     bins: ["lark-cli"]
@@ -15,7 +15,7 @@ metadata:
 ## 核心概念
 
 - **妙记（Minutes）**：来源于飞书视频会议的录制产物或用户上传的音视频文件，通过 `minute_token` 标识。
-- **妙记 Token（minute_token）**：妙记的唯一标识符，可从妙记 URL 末尾提取（例如 `https://*.feishu.cn/minutes/obcnq3b9jl72l83w4f14xxxx` 中的 `obcnq3b9jl72l83w4f14xxxx`）。如果 URL 中包含额外参数（如 `?xxx`），应截取路径最后一段。
+- **妙记 Token（minute\_token）**：妙记的唯一标识符，可从妙记 URL 末尾提取（例如 `https://*.feishu.cn/minutes/obcnq3b9jl72l83w4f14xxxx` 中的 `obcnq3b9jl72l83w4f14xxxx`）。如果 URL 中包含额外参数（如 `?xxx`），应截取路径最后一段。
 
 ## 核心场景
 
@@ -23,11 +23,10 @@ metadata:
 
 1. 当用户描述的是"我的妙记""包含某个关键词的妙记""某段时间内的妙记"，优先使用 `minutes +search`。
 2. 当用户说"我的""我自己的""我参与的""我拥有的"时，可优先将相关过滤条件映射为 `me`；其中 `me` 表示当前用户。
-3. 搜索结果中的 `minute_token` 是后续所有动作的核心输入，应优先复用，而不是重复搜索。
+3. 搜索结果中的 `token` 是后续所有动作的核心输入，应优先复用，而不是重复搜索。
 4. 搜索结果存在多条数据时，务必使用 `page_token` 持续翻页，直到确认没有更多结果，避免遗漏妙记。
 5. 单次查询最多返回 `200` 条，结果总数没有固定上限；不要把单页结果误认为全量结果。
 6. 如果用户要找的是未来会议安排，而不是已经生成的妙记，不应使用 `minutes +search`，应改走日历或会议搜索能力。
-7. 如果用户只是想查询妙记列表，而不是会议记录、纪要内容或逐字稿，应直接停留在本 skill，不要先走 [lark-vc](../lark-vc/SKILL.md)。
 
 ### 2. 查看妙记基础信息
 
@@ -39,7 +38,7 @@ metadata:
 
 ### 3. 下载妙记音视频文件
 
-1. 当用户说"下载妙记""下载录音文件""下载视频""导出媒体文件"时，使用 `minutes +download`。
+1. 下载妙记音视频文件到本地，或获取有效期 1 天的下载链接。详见 [minutes +download](references/lark-minutes-download.md)。
 2. `minutes +download` 只负责音视频媒体文件。
 3. 用户只想拿可分享的下载地址时，使用 `--url-only`；用户要落地到本地文件时，直接下载。
 

@@ -23,6 +23,9 @@
 # 关键词搜索
 lark-cli minutes +search --query "预算复盘"
 
+# 查询某一天内的妙记（单日查询时，start 和 end 必须填写同一天）
+lark-cli minutes +search --start 2026-03-10 --end 2026-03-10
+
 # 按时间范围搜索
 lark-cli minutes +search --start "2026-03-10T00:00+08:00" --end "2026-03-17T00:00+08:00"
 lark-cli minutes +search --start 2026-03-10 --end 2026-03-17
@@ -62,9 +65,9 @@ lark-cli minutes +search --query "预算复盘" --format json
 | `--query <text>`          | 否  | 搜索关键词                                |
 | `--owner-ids <ids>`       | 否  | 所有者 open\_id 列表，逗号分隔；支持传 `me` 表示当前用户 |
 | `--participant-ids <ids>` | 否  | 参与者 open\_id 列表，逗号分隔；支持传 `me` 表示当前用户 |
-| `--start <time>`          | 否  | 开始时间 8601 或仅日期）                      |
+| `--start <time>`          | 否  | 开始时间（ISO 8601 或仅日期）                  |
 | `--end <time>`            | 否  | 结束时间（ISO 8601 或仅日期）                  |
-| `--page-size <n>`         | 否  | 每页数量，默认 `20`，最大 `200`                |
+| `--page-size <n>`         | 否  | 每页数量，默认 `15`，最大 `200`                |
 | `--page-token <token>`    | 否  | 下一页分页 token                          |
 | `--dry-run`               | 否  | 预览 API 调用，不执行                        |
 
@@ -91,6 +94,17 @@ lark-cli minutes +search --query "预算复盘" --format json
 该接口使用 `page_token` 分页。继续翻页时，需要把下一次请求的 `--page-token` 设置为当前结果返回的 `page_token`。
 单次查询最多返回 `200` 条，但结果总数没有固定上限，应按 `has_more` 和 `page_token` 持续翻页直到拿全。
 
+### 6. 日期型 `--end` 包含当天整天
+
+当 `--end` 传入的是仅日期格式（如 `2026-03-10`）时，CLI 会将它解释为当天 `23:59:59`，而不是当天 `00:00:00`。
+
+这意味着：
+
+- `--start 2026-03-10 --end 2026-03-10` 表示只查 `2026-03-10` 当天
+- `--start 2026-03-10 --end 2026-03-11` 表示查询 `2026-03-10` 和 `2026-03-11` 两天
+
+如果用户说“昨天的妙记”“今天的妙记”“某一天内的妙记”，应把 `--start` 和 `--end` 都设置为同一天，而不是把 `--end` 设成下一天。
+
 ## 时间格式
 
 `--start` 和 `--end` 支持以下时间格式：
@@ -99,12 +113,12 @@ lark-cli minutes +search --query "预算复盘" --format json
 | -------------- | --------------------------- | ------- |
 | ISO 8601（带时区）  | `2026-03-10T14:00:00+08:00` | 推荐      |
 | ISO 8601（不带时区） | `2026-03-10T14:00:00`       | 按本地时区解析 |
-| 仅日期            | `2026-03-10`                | 按天粒度解析  |
+| 仅日期            | `2026-03-10`                | 按天粒度解析；若用于 `--end`，表示当天 `23:59:59` |
 
 ## 输出结果
 
 - 结构化输出包含 `items`、`total`、`has_more` 和 `page_token`。
-- 表格输出默认展示 `token`、`display_info`、`title`、`create_time` 和 `url`。
+- 表格输出默认展示 `token`、`display_info`、`description`、`app_link` 和 `avatar`。
 
 ## 请求结构
 
@@ -133,10 +147,10 @@ lark-cli minutes +search --query "预算复盘" --page-size 20 --page-token '<PA
 
 ## 搜索结果中的下一步
 
-搜索结果中的 `minute_token` / `token` 可直接用于继续查询妙记产物：
-通常先用 `minute_token` 获取妙记基础信息，确认标题、时长等元数据是否命中目标；需要进一步查看内容时，再继续查询关联的纪要产物。
+搜索结果中的 `token` 可直接作为 `minute_token` 用于继续查询妙记产物：
+通常先用搜索结果中的 `token` 获取妙记基础信息，确认描述、链接等元数据是否命中目标；需要进一步查看内容时，再继续查询关联的纪要产物。
 
-如果你已经确定目标妙记，优先直接复用搜索结果中的 `minute_token`，避免重复搜索。
+如果你已经确定目标妙记，优先直接复用搜索结果中的 `token`，避免重复搜索。
 
 ```bash
 # 首先查询妙记元信息（标题、时长、封面） → 用本 skill
@@ -163,6 +177,7 @@ lark-cli vc +notes --minute-tokens obcnhijv43vq6bcsl5xasfb2
 - 建议使用 `--format json` 输出，便于解析 `has_more` 和 `page_token`。
 - 当结果存在多页时，持续使用 `page_token` 继续遍历；单次最多 `200` 条，总结果数没有上限，不要只看第一页。
 - 排查参数与请求结构时优先使用 `--dry-run`。
+- 不要使用 `yesterday`、`today` 这类相对时间字面量；请先转换成明确日期，例如 `2026-03-10`。
 - 当用户已经明确给出 `minute_token` 或妙记链接时，优先进入 `vc +notes --minute-tokens ...`，而不是再次搜索。
 
 ## 参考

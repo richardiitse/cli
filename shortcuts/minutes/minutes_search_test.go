@@ -23,7 +23,7 @@ func newMinutesSearchTestCommand() *cobra.Command {
 	cmd.Flags().String("start", "", "")
 	cmd.Flags().String("end", "", "")
 	cmd.Flags().String("page-token", "", "")
-	cmd.Flags().Int("page-size", 20, "")
+	cmd.Flags().String("page-size", "15", "")
 	return cmd
 }
 
@@ -214,25 +214,11 @@ func TestBuildMinutesSearchFilterMeExpansion(t *testing.T) {
 func TestMinuteSearchItems(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name string
-		data map[string]interface{}
-	}{
-		{name: "items", data: map[string]interface{}{"items": []interface{}{map[string]interface{}{"token": "tok_1"}}}},
-		{name: "minute_list", data: map[string]interface{}{"minute_list": []interface{}{map[string]interface{}{"token": "tok_2"}}}},
-		{name: "minutes", data: map[string]interface{}{"minutes": []interface{}{map[string]interface{}{"token": "tok_3"}}}},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			items := minuteSearchItems(tt.data)
-			if len(items) != 1 {
-				t.Fatalf("minuteSearchItems() len = %d, want 1", len(items))
-			}
-		})
+	items := minuteSearchItems(map[string]interface{}{
+		"items": []interface{}{map[string]interface{}{"minute_token": "tok_1"}},
+	})
+	if len(items) != 1 {
+		t.Fatalf("minuteSearchItems() len = %d, want 1", len(items))
 	}
 
 	if got := minuteSearchItems(map[string]interface{}{}); got != nil {
@@ -382,13 +368,15 @@ func TestMinutesSearchExecuteRendersRowsAndMoreHint(t *testing.T) {
 			"code": 0,
 			"msg":  "ok",
 			"data": map[string]interface{}{
-				"minute_list": []interface{}{
+				"items": []interface{}{
 					map[string]interface{}{
-						"minute_token": "minute_1",
+						"token":        "minute_1",
 						"display_info": "周会摘要",
-						"topic":        "周会纪要",
-						"link":         "https://meetings.feishu.cn/minutes/obcn123",
-						"start_ms":     "1775144288000",
+						"meta_data": map[string]interface{}{
+							"description": "周会纪要",
+							"app_link":    "https://meetings.feishu.cn/minutes/obcn123",
+							"avatar":      "https://p3-lark-file.byteimg.com/img/xxxx.jpg",
+						},
 					},
 				},
 				"total":      1,
@@ -422,7 +410,7 @@ func TestMinutesSearchExecuteRendersRowsAndMoreHint(t *testing.T) {
 	}
 
 	out := stdout.String()
-	for _, want := range []string{"minute_1", "周会摘要", "周会纪要", "https://meetings.feishu.cn/minutes/obcn123", "next_token", "more available"} {
+	for _, want := range []string{"minute_1", "周会摘要", "周会纪要", "https://meetings.feishu.cn/minutes/obcn123", "https://p3-lark-file.byteimg.com/img/xxxx.jpg", "next_token", "more available"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("output missing %q, got: %s", want, out)
 		}
@@ -463,9 +451,9 @@ func TestMinuteSearchFieldExtractors(t *testing.T) {
 		"token":        "minute_1",
 		"display_info": "<h>周会</h>摘要",
 		"meta_data": map[string]interface{}{
-			"title":       "周会纪要",
-			"url":         "https://meetings.feishu.cn/minutes/obcn123",
-			"create_time": "1775144288000",
+			"description": "周会纪要",
+			"app_link":    "https://meetings.feishu.cn/minutes/obcn123",
+			"avatar":      "https://p3-lark-file.byteimg.com/img/xxxx.jpg",
 		},
 	}
 
@@ -475,14 +463,14 @@ func TestMinuteSearchFieldExtractors(t *testing.T) {
 	if got := minuteSearchDisplayInfo(item); got != "<h>周会</h>摘要" {
 		t.Fatalf("minuteSearchDisplayInfo() = %q", got)
 	}
-	if got := minuteSearchTitle(item); got != "周会纪要" {
-		t.Fatalf("minuteSearchTitle() = %q, want 周会纪要", got)
+	if got := minuteSearchDescription(item); got != "周会纪要" {
+		t.Fatalf("minuteSearchDescription() = %q, want 周会纪要", got)
 	}
-	if got := minuteSearchURL(item); got != "https://meetings.feishu.cn/minutes/obcn123" {
-		t.Fatalf("minuteSearchURL() = %q", got)
+	if got := minuteSearchAppLink(item); got != "https://meetings.feishu.cn/minutes/obcn123" {
+		t.Fatalf("minuteSearchAppLink() = %q", got)
 	}
-	if got := minuteSearchCreateTime(item); got == "" {
-		t.Fatal("minuteSearchCreateTime() should not be empty")
+	if got := minuteSearchAvatar(item); got != "https://p3-lark-file.byteimg.com/img/xxxx.jpg" {
+		t.Fatalf("minuteSearchAvatar() = %q", got)
 	}
 }
 
@@ -490,23 +478,47 @@ func TestMinuteSearchFieldExtractorsFallbacks(t *testing.T) {
 	t.Parallel()
 
 	item := map[string]interface{}{
-		"id":           "minute_2",
+		"token":        "minute_2",
 		"display_info": "回退摘要",
-		"name":         "回退纪要",
-		"minute_url":   "https://meetings.feishu.cn/minutes/fallback",
-		"start_time":   "bad-ts",
+		"meta_data": map[string]interface{}{
+			"description": "回退纪要",
+			"app_link":    "https://meetings.feishu.cn/minutes/fallback",
+			"avatar":      "https://p3-lark-file.byteimg.com/img/fallback.jpg",
+		},
 	}
 
 	if got := minuteSearchToken(item); got != "minute_2" {
 		t.Fatalf("minuteSearchToken() = %q, want minute_2", got)
 	}
-	if got := minuteSearchTitle(item); got != "回退纪要" {
-		t.Fatalf("minuteSearchTitle() = %q, want 回退纪要", got)
+	if got := minuteSearchDescription(item); got != "回退纪要" {
+		t.Fatalf("minuteSearchDescription() = %q, want 回退纪要", got)
 	}
-	if got := minuteSearchURL(item); got != "https://meetings.feishu.cn/minutes/fallback" {
-		t.Fatalf("minuteSearchURL() = %q", got)
+	if got := minuteSearchAppLink(item); got != "https://meetings.feishu.cn/minutes/fallback" {
+		t.Fatalf("minuteSearchAppLink() = %q", got)
 	}
-	if got := minuteSearchCreateTime(item); got != "bad-ts" {
-		t.Fatalf("minuteSearchCreateTime() = %q, want bad-ts", got)
+	if got := minuteSearchAvatar(item); got != "https://p3-lark-file.byteimg.com/img/fallback.jpg" {
+		t.Fatalf("minuteSearchAvatar() = %q", got)
+	}
+}
+
+func TestMinuteSearchFieldExtractorsMissingMetaData(t *testing.T) {
+	t.Parallel()
+
+	item := map[string]interface{}{
+		"token":        "minute_3",
+		"display_info": "无元信息摘要",
+	}
+
+	if got := minuteSearchToken(item); got != "minute_3" {
+		t.Fatalf("minuteSearchToken() = %q, want minute_3", got)
+	}
+	if got := minuteSearchDescription(item); got != "" {
+		t.Fatalf("minuteSearchDescription() = %q, want empty", got)
+	}
+	if got := minuteSearchAppLink(item); got != "" {
+		t.Fatalf("minuteSearchAppLink() = %q, want empty", got)
+	}
+	if got := minuteSearchAvatar(item); got != "" {
+		t.Fatalf("minuteSearchAvatar() = %q, want empty", got)
 	}
 }

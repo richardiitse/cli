@@ -142,13 +142,11 @@ func buildMinutesSearchBody(runtime *common.RuntimeContext, startTime, endTime s
 func buildMinutesSearchParams(runtime *common.RuntimeContext) larkcore.QueryParams {
 	params := larkcore.QueryParams{}
 
-	pageSize := defaultMinutesSearchPageSize
-	if runtime.Cmd != nil && runtime.Cmd.Flags().Changed("page-size") {
-		if v := runtime.Int("page-size"); v > 0 {
-			pageSize = v
-		}
+	pageSize := strings.TrimSpace(runtime.Str("page-size"))
+	if pageSize == "" {
+		pageSize = fmt.Sprintf("%d", defaultMinutesSearchPageSize)
 	}
-	params["page_size"] = []string{fmt.Sprintf("%d", pageSize)}
+	params["page_size"] = []string{pageSize}
 
 	if pageToken := strings.TrimSpace(runtime.Str("page-token")); pageToken != "" {
 		params["page_token"] = []string{pageToken}
@@ -158,81 +156,30 @@ func buildMinutesSearchParams(runtime *common.RuntimeContext) larkcore.QueryPara
 }
 
 func minuteSearchItems(data map[string]interface{}) []interface{} {
-	if items := common.GetSlice(data, "items"); items != nil {
-		return items
-	}
-	for _, key := range []string{"minute_list", "minutes"} {
-		if items := common.GetSlice(data, key); items != nil {
-			return items
-		}
-	}
-	return nil
+	return common.GetSlice(data, "items")
 }
 
 func minuteSearchToken(item map[string]interface{}) string {
-	for _, key := range []string{"token", "minute_token", "id"} {
-		if value := common.GetString(item, key); value != "" {
-			return value
-		}
-	}
-	return ""
+	return common.GetString(item, "token")
 }
 
 func minuteSearchDisplayInfo(item map[string]interface{}) string {
 	return common.GetString(item, "display_info")
 }
 
-func minuteSearchTitle(item map[string]interface{}) string {
+func minuteSearchDescription(item map[string]interface{}) string {
 	meta := common.GetMap(item, "meta_data")
-	for _, key := range []string{"title", "topic", "name"} {
-		if value := common.GetString(meta, key); value != "" {
-			return value
-		}
-		if value := common.GetString(item, key); value != "" {
-			return value
-		}
-	}
-	return ""
+	return common.GetString(meta, "description")
 }
 
-func minuteSearchCreateTime(item map[string]interface{}) string {
+func minuteSearchAppLink(item map[string]interface{}) string {
 	meta := common.GetMap(item, "meta_data")
-	for _, key := range []string{"create_time", "start_time", "start_ms"} {
-		if value := meta[key]; value != nil {
-			if formatted := common.FormatTime(value); formatted != "" && formatted != fmt.Sprintf("%v", value) {
-				return formatted
-			}
-			if raw := fmt.Sprintf("%v", value); raw != "" && raw != "<nil>" {
-				return raw
-			}
-		}
-	}
-	for _, key := range []string{"create_time", "start_time", "start_ms"} {
-		value := item[key]
-		if value == nil {
-			continue
-		}
-		if formatted := common.FormatTime(value); formatted != "" && formatted != fmt.Sprintf("%v", value) {
-			return formatted
-		}
-		if raw := fmt.Sprintf("%v", value); raw != "" && raw != "<nil>" {
-			return raw
-		}
-	}
-	return ""
+	return common.GetString(meta, "app_link")
 }
 
-func minuteSearchURL(item map[string]interface{}) string {
+func minuteSearchAvatar(item map[string]interface{}) string {
 	meta := common.GetMap(item, "meta_data")
-	for _, key := range []string{"url", "minute_url", "link"} {
-		if value := common.GetString(meta, key); value != "" {
-			return value
-		}
-		if value := common.GetString(item, key); value != "" {
-			return value
-		}
-	}
-	return ""
+	return common.GetString(meta, "avatar")
 }
 
 var MinutesSearch = common.Shortcut{
@@ -250,7 +197,7 @@ var MinutesSearch = common.Shortcut{
 		{Name: "start", Desc: "time lower bound (ISO 8601 or YYYY-MM-DD)"},
 		{Name: "end", Desc: "time upper bound (ISO 8601 or YYYY-MM-DD)"},
 		{Name: "page-token", Desc: "page token for next page"},
-		{Name: "page-size", Type: "int", Default: "15", Desc: "page size, 1-200 (default 15)"},
+		{Name: "page-size", Default: "15", Desc: "page size, 1-200 (default 15)"},
 	},
 	Validate: func(ctx context.Context, runtime *common.RuntimeContext) error {
 		if _, _, err := parseTimeRange(runtime); err != nil {
@@ -259,11 +206,8 @@ var MinutesSearch = common.Shortcut{
 		if q := strings.TrimSpace(runtime.Str("query")); q != "" && utf8.RuneCountInString(q) > maxMinutesSearchQueryLen {
 			return output.ErrValidation("--query: length must be between 1 and 50 characters")
 		}
-		if runtime.Cmd != nil && runtime.Cmd.Flags().Changed("page-size") {
-			pageSize := runtime.Int("page-size")
-			if pageSize < 1 || pageSize > maxMinutesSearchPageSize {
-				return common.FlagErrorf("invalid --page-size %d: must be between %d and %d", pageSize, 1, maxMinutesSearchPageSize)
-			}
+		if _, err := common.ValidatePageSize(runtime, "page-size", defaultMinutesSearchPageSize, 1, maxMinutesSearchPageSize); err != nil {
+			return err
 		}
 		for _, id := range resolveUserIDs(common.SplitCSV(runtime.Str("owner-ids")), runtime) {
 			if _, err := common.ValidateUserID(id); err != nil {
@@ -308,12 +252,7 @@ var MinutesSearch = common.Shortcut{
 		}
 
 		params := map[string]interface{}{}
-		pageSize := defaultMinutesSearchPageSize
-		if runtime.Cmd != nil && runtime.Cmd.Flags().Changed("page-size") {
-			if v := runtime.Int("page-size"); v > 0 {
-				pageSize = v
-			}
-		}
+		pageSize, _ := strconv.Atoi(buildMinutesSearchParams(runtime).Get("page_size"))
 		params["page_size"] = pageSize
 		if pageToken := strings.TrimSpace(runtime.Str("page-token")); pageToken != "" {
 			params["page_token"] = pageToken
@@ -353,9 +292,9 @@ var MinutesSearch = common.Shortcut{
 				rows = append(rows, map[string]interface{}{
 					"token":        minuteSearchToken(item),
 					"display_info": common.TruncateStr(minuteSearchDisplayInfo(item), 40),
-					"title":        common.TruncateStr(minuteSearchTitle(item), 40),
-					"create_time":  minuteSearchCreateTime(item),
-					"url":          common.TruncateStr(minuteSearchURL(item), 80),
+					"description":  common.TruncateStr(minuteSearchDescription(item), 40),
+					"app_link":     common.TruncateStr(minuteSearchAppLink(item), 80),
+					"avatar":       common.TruncateStr(minuteSearchAvatar(item), 80),
 				})
 			}
 			output.PrintTable(w, rows)
