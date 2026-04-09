@@ -192,7 +192,13 @@ var MailWatch = common.Shortcut{
 		msgFormat := runtime.Str("msg-format")
 		outputDir := runtime.Str("output-dir")
 		if outputDir != "" {
-			// Enforce CWD containment: reject absolute paths, ~, path traversal,
+			// Reject tilde paths explicitly — SafeOutputPath treats "~/x" as a
+			// literal relative path (creating a directory named "~"), which is
+			// confusing. Fail fast with a clear hint instead.
+			if outputDir == "~" || strings.HasPrefix(outputDir, "~/") {
+				return fmt.Errorf("--output-dir does not support ~ expansion; use a relative path like ./output instead")
+			}
+			// Enforce CWD containment: reject absolute paths, path traversal,
 			// and symlink escapes. SafeOutputPath returns a resolved absolute path
 			// under CWD, preventing writes to arbitrary system directories.
 			safePath, err := validate.SafeOutputPath(outputDir)
