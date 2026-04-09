@@ -30,6 +30,76 @@ metadata:
 4. [slides_demo.xml](references/slides_demo.xml) — 真实 XML 示例
 5. [slides_xml_schema_definition.xml](references/slides_xml_schema_definition.xml) — 完整 Schema
 
+## Workflow
+
+> **这是演示文稿，不是文档。** 每页 slide 是独立的视觉画面，信息密度要低，排版要留白。
+
+```
+Step 1: 需求澄清 & 读取知识
+  - 澄清用户需求：主题、受众、页数、风格偏好
+  - 如果用户没有明确风格，根据主题推荐（见下方风格判断表）
+  - 读取 XML Schema 参考：
+    · xml-schema-quick-ref.md — 元素和属性速查
+    · xml-format-guide.md — 详细结构与示例
+    · slides_demo.xml — 真实 XML 示例
+
+Step 2: 生成大纲 → 用户确认 → 逐页创建
+  - 生成结构化大纲（每页标题 + 要点 + 布局描述），交给用户确认
+  - 用户确认或调整后，开始创建：
+    · xml_presentations.create 创建空白 PPT（仅传标题和尺寸）
+    · xml_presentation.silde.create 逐页添加 slide
+  - 每页 slide 需要完整的 XML：背景、文本、图形、配色
+  - 复杂元素（table、chart）需参考 XSD 原文
+
+Step 3: 审查 & 交付
+  - 创建完成后，用 xml_presentations.get 读取全文 XML，确认：
+    · 页数是否正确？每页内容是否完整？
+    · 配色是否统一？字号层级是否合理？
+  - 有问题 → 用 xml_presentation.silde.delete 删除问题页，重新创建
+  - 没问题 → 交付：告知用户演示文稿 ID 和访问方式
+```
+
+### 风格快速判断表
+
+| 场景/主题 | 推荐风格 | 背景 | 主色 | 文字色 |
+|----------|---------|------|------|-------|
+| 科技/AI/产品 | 深色科技风 | 深蓝渐变 `linear-gradient(135deg, rgb(15,23,42), rgb(56,97,140))` | 蓝色系 `rgb(59,130,246)` | 白色 |
+| 商务汇报/季度总结 | 浅色商务风 | 浅灰 `rgb(248,250,252)` | 深蓝 `rgb(30,60,114)` | 深灰 `rgb(30,41,59)` |
+| 教育/培训 | 清新明亮风 | 白色 `rgb(255,255,255)` | 绿色系 `rgb(34,197,94)` | 深灰 `rgb(51,65,85)` |
+| 创意/设计 | 渐变活力风 | 紫粉渐变 `linear-gradient(135deg, rgb(88,28,135), rgb(190,24,93))` | 粉紫色系 | 白色 |
+| 周报/日常汇报 | 简约专业风 | 浅灰 `rgb(248,250,252)` + 顶部彩色渐变条 | 蓝色 `rgb(59,130,246)` | 深色 `rgb(15,23,42)` |
+| 用户未指定 | 默认简约专业风 | 同上 | 同上 | 同上 |
+
+### 页面布局建议
+
+| 页面类型 | 布局要点 |
+|---------|---------|
+| 封面页 | 居中大标题 + 副标题 + 底部信息，背景用渐变或深色 |
+| 数据概览页 | 指标卡片横排（rect 背景 + 大号数字 + 小号说明），下方列表或图表 |
+| 内容页 | 左侧竖线装饰 + 标题，下方分栏或列表 |
+| 对比/表格页 | table 元素或并列卡片，表头深色背景白字 |
+| 图表页 | chart 元素（column/line/pie），配合文字说明 |
+| 结尾页 | 居中感谢语 + 装饰线，风格与封面呼应 |
+
+### 大纲模板
+
+生成大纲时使用以下格式，交给用户确认：
+
+```
+[PPT 标题] — [定位描述]，面向 [目标受众]
+
+页面结构（N 页）：
+1. 封面页：[标题文案]
+2. [页面主题]：[要点1]、[要点2]、[要点3]
+3. [页面主题]：[要点描述]
+...
+N. 结尾页：[结尾文案]
+
+风格：[配色方案]，[排版风格]
+```
+
+---
+
 ## 核心概念
 
 ### URL 格式与 Token
@@ -128,12 +198,9 @@ lark-cli slides <resource> <method> [flags]  # 调用 API
 
 1. **先查 schema**：调用前先运行 `lark-cli schema slides.<resource>.<method>`
 2. **命名空间建议**：协议标准写法应带 `xmlns`，例如 `<presentation xmlns="http://www.larkoffice.com/sml/2.0" ...>`；当前服务端实现可能兼容不带 `xmlns` 的输入，但不作为协议保证
-3. **根结构固定**：`<presentation>` 直接子元素只有 `<title>`、`<theme>`、`<slide>`
-4. **slide 结构固定**：`<slide>` 直接子元素只有 `<style>`、`<data>`、`<note>`
-5. **文本通过 content 表达**：页面正文通常放在 `shape/table/note` 内的 `<content>` 中
-6. **创建流程要分两步**：先用 `xml_presentations.create` 创建空白 PPT，再用 `xml_presentation.silde.create` 逐页添加 slide
-7. **保存关键 ID**：后续操作需要 `xml_presentation_id`、`slide_id`、`revision_id`
-8. **删除谨慎**：删除操作不可逆，且至少保留一页幻灯片
+3. **保存关键 ID**：后续操作需要 `xml_presentation_id`、`slide_id`、`revision_id`
+4. **删除谨慎**：删除操作不可逆，且至少保留一页幻灯片
+5. **先出大纲再动手**：创建 PPT 前先生成大纲交给用户确认，避免返工
 
 ## 权限表
 
@@ -155,6 +222,43 @@ lark-cli slides <resource> <method> [flags]  # 调用 API
 | 404 | 幻灯片不存在 | 检查 `slide_id` 是否正确 |
 | 403 | 权限不足 | 检查是否拥有对应的 scope |
 | 400 | 无法删除唯一幻灯片 | 演示文稿至少保留一页幻灯片 |
+
+## 创建前自查
+
+逐页生成 XML 前，快速检查：
+
+- [ ] 每页背景色/渐变是否设置？风格是否与整体一致？
+- [ ] 标题用大字号（28-48），正文用小字号（13-16），层级分明？
+- [ ] 同类元素配色一致？（如所有指标卡片同色系、所有正文同色）
+- [ ] 装饰元素（分割线、色块、竖线）颜色是否与主色协调？
+- [ ] 文本框尺寸是否足够容纳内容？（宽度 × 高度）
+- [ ] shape 的 `type` 是否正确？（文本框用 `text`，装饰用 `rect`）
+- [ ] XML 标签是否全部正确闭合？特殊字符（`&`、`<`、`>`）是否转义？
+
+## 症状 → 修复表
+
+| 看到的问题 | 改什么 |
+|-----------|--------|
+| 文字被截断/看不全 | 增大 shape 的 `width` 或 `height` |
+| 元素重叠 | 调整 `topLeftX`/`topLeftY`，拉开间距 |
+| 页面大面积空白 | 缩小元素间距，或增加内容填充 |
+| 文字和背景色太接近 | 深色背景用浅色文字，浅色背景用深色文字 |
+| 表格列宽不合理 | 调整 `colgroup` 中 `col` 的 `width` 值 |
+| 图表没有显示 | 检查 `chartPlotArea` 和 `chartData` 是否都包含，`dim1`/`dim2` 数据数量是否匹配 |
+| 渐变方向不对 | 调整 `linear-gradient` 的角度（`90deg` 水平、`180deg` 垂直、`135deg` 对角线） |
+| 整体风格不统一 | 封面页和结尾页用同一背景，内容页保持一致的配色和字号体系 |
+| API 返回 400 | 检查 XML 语法：标签闭合、属性引号、特殊字符转义 |
+| API 返回 3350001 | `xml_presentation_id` 不是通过 `xml_presentations.create` 创建的，或 token 不正确 |
+
+## 关键约束速查
+
+> 最高频出错的规则，即使不读参考文档也必须遵守。
+
+1. **`<presentation>` 直接子元素只有 `<title>`、`<theme>`、`<slide>`** — 不能在 presentation 下直接放 shape 等元素
+2. **`<slide>` 直接子元素只有 `<style>`、`<data>`、`<note>`** — 文本和图形必须放在 `<data>` 内
+3. **文本通过 `<content>` 表达** — 不能把文字直接写在 shape 标签内，必须用 `<content><p>...</p></content>`
+4. **创建流程必须分两步** — `xml_presentations.create` 只建空白 PPT，页面内容用 `xml_presentation.silde.create` 逐页添加
+5. **XML 特殊字符必须转义** — `&` → `&amp;`，`<` → `&lt;`，`>` → `&gt;`，在 `--data` JSON 中还需转义双引号
 
 ## 参考文档
 
