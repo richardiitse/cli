@@ -30,11 +30,11 @@
 |------|------|----------|
 | `str_replace` | 全文文本查找替换（replacement 支持富文本标签） | `--pattern` `--content` |
 | `str_delete` | 全文文本查找删除 | `--pattern` |
-| `block_insert` | 在指定 block 之后插入新内容 | `--block-id` `--content` |
+| `block_insert_after` | 在指定 block 之后插入新内容 | `--block-id` `--content` |
 | `block_replace` | 替换指定 block（同一 block 仅限一次） | `--block-id` `--content` |
 | `block_delete` | 删除指定 block（逗号分隔可批量） | `--block-id` |
 | `overwrite` | ⚠️ 清空文档后全文重写（可能丢失图片、评论） | `--content` |
-| `append` | 在文档末尾追加内容（等价于 `block_insert --block-id -1`） | `--content` |
+| `append` | 在文档末尾追加内容（等价于 `block_insert_after --block-id -1`） | `--content` |
 
 ## 指令示例
 
@@ -61,10 +61,10 @@ lark-cli docs +update --doc "<doc_id>" --command str_delete \
   --pattern "废弃的内容"
 ```
 
-### block_insert — 在指定 block 之后插入
+### block_insert_after — 在指定 block 之后插入
 
 ```bash
-lark-cli docs +update --doc "<doc_id>" --command block_insert \
+lark-cli docs +update --doc "<doc_id>" --command block_insert_after \
   --block-id "blkcnXXXX" \
   --content '<h2>新章节</h2><ul><li>要点 1</li><li>要点 2</li></ul>'
 ```
@@ -100,7 +100,7 @@ lark-cli docs +update --doc "<doc_id>" --command append \
   --content '<h2>新增章节</h2><p>追加的内容</p>'
 ```
 
-> 等价于 `block_insert --block-id -1`，无需先获取 block ID。
+> 等价于 `block_insert_after --block-id -1`，无需先获取 block ID。
 
 ## 返回值
 
@@ -147,7 +147,7 @@ lark-cli docs +update --doc "<doc_id>" --command append \
      --block-id "blkcnXXXX" --content "<p>新内容</p>"
 
    # 在某 block 后插入
-   lark-cli docs +update --doc "<doc_id>" --command block_insert \
+   lark-cli docs +update --doc "<doc_id>" --command block_insert_after \
      --block-id "blkcnXXXX" --content "<h2>追加的章节</h2>"
    ```
 
@@ -162,13 +162,13 @@ lark-cli docs +update --doc "<doc_id>" --command str_replace \
 
 ## 最佳实践
 
-- **精确操作优于全文覆盖**：使用 `block_replace`/`block_insert` 精确修改，避免 `overwrite` 全文覆盖
+- **精确操作优于全文覆盖**：使用 `block_replace`/`block_insert_after` 精确修改，避免 `overwrite` 全文覆盖
 - **保护不可重建的内容**：图片、画板、电子表格等以 token 形式存储，替换时避开这些 block
 - **str_replace 的 replacement 支持富文本**：可以用行内标签 `<b>`、`<a>`、`<cite>`、`<latex>` 等替换普通文本为富文本
 - **同一 block 只能被 replace 一次**：多次修改同一 block 请合并为一次 block_replace
 - **block_delete 支持批量**：用逗号分隔多个 block_id 一次删除
 - **复杂结构重组**：将多个段落转换为 grid / table 等复杂布局时，分步操作比 overwrite 更安全：
-  1. 用 `block_insert` 在目标位置插入新的富文本结构
+  1. 用 `block_insert_after` 在目标位置插入新的富文本结构
   2. 用 `block_delete` 批量删除旧的 block
   3. 这样可以保留文档中其他不相关的内容（图片、评论等）
 - **视觉丰富度**：插入或替换内容时，同样遵循 [`lark-doc-style.md`](style/lark-doc-style.md) 中的样式指南，主动使用结构化 block

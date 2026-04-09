@@ -35,7 +35,7 @@ lark-cli docs +fetch --doc Z1FjxxxxxxxxxxxxxxxxxxxtnAc --format pretty
 
 **决策规则**：
 - 如果用户只是想看/读/总结文档 → `simple`
-- 如果后续需要用 `block_insert`/`block_replace`/`block_delete` → `with-ids` 或 `full`
+- 如果后续需要用 `block_insert_after`/`block_replace`/`block_delete` → `with-ids` 或 `full`
 - 如果涉及复杂编辑（保留样式、处理引用）→ `full`
 
 ## 返回值
