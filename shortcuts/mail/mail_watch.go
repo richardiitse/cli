@@ -192,36 +192,17 @@ var MailWatch = common.Shortcut{
 		msgFormat := runtime.Str("msg-format")
 		outputDir := runtime.Str("output-dir")
 		if outputDir != "" {
-			if outputDir == "~" || strings.HasPrefix(outputDir, "~/") {
-				home, err := vfs.UserHomeDir()
-				if err != nil {
-					return fmt.Errorf("cannot expand ~: %w", err)
-				}
-				if outputDir == "~" {
-					outputDir = home
-				} else {
-					outputDir = filepath.Join(home, outputDir[2:])
-				}
-			} else if filepath.IsAbs(outputDir) {
-				outputDir = filepath.Clean(outputDir)
-			} else {
-				safePath, err := validate.SafeOutputPath(outputDir)
-				if err != nil {
-					return err
-				}
-				outputDir = safePath
+			// Enforce CWD containment: reject absolute paths, ~, path traversal,
+			// and symlink escapes. SafeOutputPath returns a resolved absolute path
+			// under CWD, preventing writes to arbitrary system directories.
+			safePath, err := validate.SafeOutputPath(outputDir)
+			if err != nil {
+				return err
 			}
-			// Resolve symlinks on the output directory so all writes use the real
-			// filesystem path. This prevents a symlink from redirecting writes to
-			// an unintended location (TOCTOU mitigation).
+			outputDir = safePath
 			if err := vfs.MkdirAll(outputDir, 0700); err != nil {
 				return fmt.Errorf("cannot create output directory %q: %w", outputDir, err)
 			}
-			resolved, err := filepath.EvalSymlinks(outputDir)
-			if err != nil {
-				return fmt.Errorf("cannot resolve output directory: %w", err)
-			}
-			outputDir = resolved
 		}
 		labelIDsInput := runtime.Str("label-ids")
 		folderIDsInput := runtime.Str("folder-ids")
