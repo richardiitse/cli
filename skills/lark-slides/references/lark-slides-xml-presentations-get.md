@@ -1,4 +1,4 @@
-# lark-slides_ai xml_presentations get
+# lark-slides xml_presentations get
 
 ## 用途
 
@@ -7,7 +7,7 @@
 ## 命令
 
 ```bash
-lark-cli slides_ai xml_presentations get --params '<json_params>'
+lark-cli slides xml_presentations get --params '<json_params>'
 ```
 
 ## 参数说明
@@ -35,19 +35,19 @@ lark-cli slides_ai xml_presentations get --params '<json_params>'
 ### 基础示例
 
 ```bash
-lark-cli slides_ai xml_presentations get --params '{"xml_presentation_id":"S7YwsFIGIlnS2qdscKDc1Yabcef"}'
+lark-cli slides xml_presentations get --params '{"xml_presentation_id":"S7YwsFIGIlnS2qdscKDc1Yabcef"}'
 ```
 
 ### 结合 jq 格式化输出
 
 ```bash
-lark-cli slides_ai xml_presentations get --params '{"xml_presentation_id":"S7YwsFIGIlnS2qdscKDc1Yabcef"}' | jq -r '.xml_presentation.content'
+lark-cli slides xml_presentations get --params '{"xml_presentation_id":"S7YwsFIGIlnS2qdscKDc1Yabcef"}' | jq -r '.xml_presentation.content'
 ```
 
 ### 保存到文件
 
 ```bash
-lark-cli slides_ai xml_presentations get --params '{"xml_presentation_id":"S7YwsFIGIlnS2qdscKDc1Yabcef"}' > presentation_data.json
+lark-cli slides xml_presentations get --params '{"xml_presentation_id":"S7YwsFIGIlnS2qdscKDc1Yabcef"}' > presentation_data.json
 ```
 
 ## 返回值
@@ -82,13 +82,13 @@ lark-cli slides_ai xml_presentations get --params '{"xml_presentation_id":"S7Yws
 
 ## 注意事项
 
-1. **执行前必做**: 使用 `lark-cli schema slides_ai.xml_presentations.get` 查看最新的参数结构
+1. **执行前必做**: 使用 `lark-cli schema slides.xml_presentations.get` 查看最新的参数结构
 2. 返回的 XML 在 `xml_presentation.content` 字段中
 3. 如果只需要部分信息，可以使用 `jq` 等工具过滤返回结果
 4. 建议将获取的 XML 保存为文件，便于后续编辑或备份
 
 ## 相关命令
 
-- [xml_presentations create](lark-slides_ai-xml-presentations-create.md) - 创建空白 PPT
-- [xml_presentation.sildes create](lark-slides_ai-xml-presentation-slides-create.md) - 添加幻灯片页面
-- [xml_presentation.sildes delete](lark-slides_ai-xml-presentation-slides-delete.md) - 删除幻灯片页面
+- [xml_presentations create](lark-slides-xml-presentations-create.md) - 创建空白 PPT
+- [xml_presentation.sildes create](lark-slides-xml-presentation-slides-create.md) - 添加幻灯片页面
+- [xml_presentation.sildes delete](lark-slides-xml-presentation-slides-delete.md) - 删除幻灯片页面

@@ -1,4 +1,4 @@
-# lark-slides_ai xml_presentations create
+# lark-slides xml_presentations create
 
 ## 用途
 
@@ -7,14 +7,14 @@
 ## 命令
 
 ```bash
-lark-cli slides_ai xml_presentations create --data '<json_data>'
+lark-cli slides xml_presentations create --data '<json_data>'
 ```
 
 ## 参数说明
 
 | 参数 | 类型 | 必需 | 说明 |
 |------|------|------|------|
-| `--data` | JSON string | 是 | 请求体，字段结构以 `lark-cli schema slides_ai.xml_presentations.create` 为准 |
+| `--data` | JSON string | 是 | 请求体，字段结构以 `lark-cli schema slides.xml_presentations.create` 为准 |
 
 ### data JSON 结构
 
@@ -38,14 +38,14 @@ lark-cli slides_ai xml_presentations create --data '<json_data>'
 
 > 常见新建场景只需要传 `xml_presentation.content`，而且建议内容保持为空白 PPT 模板。XML 协议本身以 [slides_xml_schema_definition.xml](slides_xml_schema_definition.xml) 为准。
 
-> **当前命令行为说明**：`xml_presentations.create` 当前只适合创建空白 PPT，通常只支持指定标题和长宽。页面内容不要在这里一次性传入，后续 slide 请使用 [xml_presentation.sildes create](lark-slides_ai-xml-presentation-slides-create.md) 逐页添加。
+> **当前命令行为说明**：`xml_presentations.create` 当前只适合创建空白 PPT，通常只支持指定标题和长宽。页面内容不要在这里一次性传入，后续 slide 请使用 [xml_presentation.sildes create](lark-slides-xml-presentation-slides-create.md) 逐页添加。
 
 ## 使用示例
 
 ### 创建空白 PPT
 
 ```bash
-lark-cli slides_ai xml_presentations create --data '{
+lark-cli slides xml_presentations create --data '{
   "xml_presentation": {
     "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><presentation xmlns=\"http://www.larkoffice.com/sml/2.0\" width=\"960\" height=\"540\"><title>演示文稿标题</title></presentation>"
   }
@@ -55,13 +55,13 @@ lark-cli slides_ai xml_presentations create --data '{
 ### 创建后再逐页添加 slide
 
 ```bash
-PRESENTATION_ID=$(lark-cli slides_ai xml_presentations create --data '{
+PRESENTATION_ID=$(lark-cli slides xml_presentations create --data '{
   "xml_presentation": {
     "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><presentation xmlns=\"http://www.larkoffice.com/sml/2.0\" width=\"960\" height=\"540\"><title>项目汇报</title></presentation>"
   }
 }' | jq -r '.xml_presentation_id')
 
-lark-cli slides_ai xml_presentation.sildes create --params "{\"xml_presentation_id\":\"$PRESENTATION_ID\"}" --data '{
+lark-cli slides xml_presentation.sildes create --params "{\"xml_presentation_id\":\"$PRESENTATION_ID\"}" --data '{
   "slide": {
     "content": "<slide xmlns=\"http://www.larkoffice.com/sml/2.0\"><style><fill><fillColor color=\"rgb(245, 245, 245)\"/></fill></style><data><shape type=\"text\" topLeftX=\"80\" topLeftY=\"72\" width=\"760\" height=\"90\"><content textType=\"title\"><p>Q3 项目汇报</p></content></shape><shape type=\"text\" topLeftX=\"80\" topLeftY=\"190\" width=\"520\" height=\"220\"><content textType=\"body\"><p>关键结论</p><ul><li><p>页面加载速度提升 40%</p></li><li><p>用户满意度提升</p></li><li><p>新增功能 12 个</p></li></ul></content></shape><shape type=\"rect\" topLeftX=\"660\" topLeftY=\"180\" width=\"180\" height=\"140\"><fill><fillColor color=\"rgba(100, 149, 237, 0.25)\"/></fill><border color=\"rgb(100, 149, 237)\" width=\"2\"/></shape></data></slide>"
   }
@@ -71,7 +71,7 @@ lark-cli slides_ai xml_presentation.sildes create --params "{\"xml_presentation_
 ### 从文件读取 XML
 
 ```bash
-lark-cli slides_ai xml_presentations create --data "$(jq -n --arg content "$(cat presentation.xml)" '{xml_presentation:{content:$content}}')"
+lark-cli slides xml_presentations create --data "$(jq -n --arg content "$(cat presentation.xml)" '{xml_presentation:{content:$content}}')"
 ```
 
 其中 `presentation.xml` 建议保持为空白模板，例如：
@@ -123,18 +123,18 @@ lark-cli slides_ai xml_presentations create --data "$(jq -n --arg content "$(cat
 
 ## 注意事项
 
-1. **执行前必做**: 使用 `lark-cli schema slides_ai.xml_presentations.create` 查看最新的参数结构
+1. **执行前必做**: 使用 `lark-cli schema slides.xml_presentations.create` 查看最新的参数结构
 2. **命名空间建议**: 协议标准写法应带 `xmlns`，例如 `<presentation xmlns="http://www.larkoffice.com/sml/2.0" ...>`；当前服务端实现可能兼容不带 `xmlns` 的输入，但不作为协议保证
 3. **create 只建空白 PPT**: 建议只传标题和长宽，不要把页面内容直接塞进 create
-4. **页面内容添加方式**: 后续 slide 请用 [xml_presentation.sildes create](lark-slides_ai-xml-presentation-slides-create.md)
+4. **页面内容添加方式**: 后续 slide 请用 [xml_presentation.sildes create](lark-slides-xml-presentation-slides-create.md)
 5. **JSON 转义**: 如果直接内联 XML，需要正确转义双引号
 6. **创建成功后保存返回的 `xml_presentation_id` 和 `revision_id`**
 7. **完整 Schema 定义**: 参考 [slides_xml_schema_definition.xml](slides_xml_schema_definition.xml)
 
 ## 相关命令
 
-- [xml_presentations get](lark-slides_ai-xml-presentations-get.md) - 读取 PPT 内容
-- [xml_presentation.sildes create](lark-slides_ai-xml-presentation-slides-create.md) - 添加幻灯片页面
-- [xml_presentation.sildes delete](lark-slides_ai-xml-presentation-slides-delete.md) - 删除幻灯片页面
+- [xml_presentations get](lark-slides-xml-presentations-get.md) - 读取 PPT 内容
+- [xml_presentation.sildes create](lark-slides-xml-presentation-slides-create.md) - 添加幻灯片页面
+- [xml_presentation.sildes delete](lark-slides-xml-presentation-slides-delete.md) - 删除幻灯片页面
 - [xml-format-guide.md](xml-format-guide.md) - XML 格式详细规范
 - [xml-schema-quick-ref.md](xml-schema-quick-ref.md) - Schema 快速参考
