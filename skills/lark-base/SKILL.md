@@ -237,14 +237,12 @@ metadata:
 | URL 中的 `?table={id}` | 先按前缀判断对象类型 | `tbl` 开头表示数据表 `table-id`，可作为 `--table-id`；`blk` 开头表示仪表盘 `dashboard-ID`；`wkf` 开头表示 `workflow-ID`；`ldx` 开头表示内嵌文档，不要一律当成 `--table-id` |
 | URL 中的 `?view={id}` | 提取为 `--view-id` | 适合直接定位视图 |
 
-| `wiki.spaces.get_node` 返回的 `obj_type` | 后续路线 | 说明 |
-|----------------------------------------|----------|------|
+| `lark-cli wiki spaces get_node` 返回的 `obj_type` | 后续路线 | 说明 |
+|-----------------------------------------------|----------|------|
 | `bitable` | 优先走 `lark-cli base +...` | 如果 shortcut 不覆盖，再用 `lark-cli base <resource> <method>`；不要改走 `lark-cli api /open-apis/bitable/v1/...` |
 | `docx` | 转到文档 / Drive 相关 skill | 不继续使用本 skill 的 Base 命令 |
-| `doc` | 转到文档 / Drive 相关 skill | 不继续使用本 skill 的 Base 命令 |
 | `sheet` | 转到 Sheets 相关 skill | 不继续使用本 skill 的 Base 命令 |
 | `slides` | 转到 Drive 相关 skill | 不继续使用本 skill 的 Base 命令 |
-| `file` | 转到 Drive 相关 skill | 不继续使用本 skill 的 Base 命令 |
 | `mindnote` | 转到 Drive 相关 skill | 不继续使用本 skill 的 Base 命令 |
 
 ### 3.5 执行身份与人员字段
