@@ -4,9 +4,11 @@
 package bot
 
 import (
+	"context"
 	"testing"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
+	larkevent "github.com/larksuite/oapi-sdk-go/v3/event"
 	"github.com/larksuite/cli/internal/core"
 )
 
@@ -107,8 +109,25 @@ func TestEventSubscriber_info(t *testing.T) {
 		quiet:      true, // Should suppress output
 	}
 
-	// Should not panic
+	// Should not panic with quiet=true
 	subscriber.info("This should not be printed")
+}
+
+// TestEventSubscriber_info_NotQuiet tests info message printing when not quiet
+func TestEventSubscriber_info_NotQuiet(t *testing.T) {
+	handler, _ := NewBotHandler(BotHandlerConfig{
+		ClaudeClient:   NewClaudeClient(ClaudeClientConfig{}),
+		SessionManager: nil,
+		WorkDir:        "/tmp",
+	})
+
+	subscriber := &EventSubscriber{
+		botHandler: handler,
+		quiet:      false, // Should print output
+	}
+
+	// Should not panic with quiet=false
+	subscriber.info("This message will be printed")
 }
 
 // TestEventSubscriber_error tests error message printing
@@ -141,6 +160,58 @@ func TestEventSubscriber_debug(t *testing.T) {
 		quiet:      true,
 	}
 
-	// Should not panic
+	// Should not panic (debug is currently a no-op)
 	subscriber.debug("Test debug message")
+}
+
+// TestEventSubscriber_createEventHandler tests the event handler factory
+func TestEventSubscriber_createEventHandler(t *testing.T) {
+	handler, _ := NewBotHandler(BotHandlerConfig{
+		ClaudeClient:   NewClaudeClient(ClaudeClientConfig{}),
+		SessionManager: nil,
+		WorkDir:        "/tmp",
+	})
+
+	subscriber := &EventSubscriber{
+		botHandler: handler,
+		quiet:      true,
+	}
+
+	// Create the event handler
+	eventHandler := subscriber.createEventHandler()
+
+	// Test with nil event body
+	err := eventHandler(context.Background(), &larkevent.EventReq{})
+	if err != nil {
+		t.Errorf("Event handler returned error for nil body: %v", err)
+	}
+
+	// Test with invalid JSON
+	err = eventHandler(context.Background(), &larkevent.EventReq{
+		Body: []byte("not json"),
+	})
+	if err != nil {
+		t.Errorf("Event handler returned error for invalid JSON: %v", err)
+	}
+
+	// Test with missing header
+	err = eventHandler(context.Background(), &larkevent.EventReq{
+		Body: []byte(`{"event":{}}`),
+	})
+	if err != nil {
+		t.Errorf("Event handler returned error for missing header: %v", err)
+	}
+
+	// Test with non-message event type
+	err = eventHandler(context.Background(), &larkevent.EventReq{
+		Body: []byte(`{"header":{"event_type":"other.event"},"event":{}}`),
+	})
+	if err != nil {
+		t.Errorf("Event handler returned error for non-message event: %v", err)
+	}
+
+	// Verify event count
+	if subscriber.eventCount != 3 {
+		t.Errorf("eventCount = %d, want 3", subscriber.eventCount)
+	}
 }

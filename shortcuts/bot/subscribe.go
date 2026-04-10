@@ -29,6 +29,7 @@ type EventSubscriber struct {
 // EventSubscriberConfig configures a new EventSubscriber
 type EventSubscriberConfig struct {
 	BotHandler  *BotHandler
+	MessageSender *MessageSender
 	AppID       string
 	AppSecret   core.SecretInput
 	Brand       string // "feishu" or "lark"
@@ -42,9 +43,14 @@ func NewEventSubscriber(config EventSubscriberConfig) *EventSubscriber {
 		domain = lark.LarkBaseUrl
 	}
 
+	sender := config.MessageSender
+	if sender == nil {
+		sender = NewMessageSender()
+	}
+
 	return &EventSubscriber{
 		botHandler: config.BotHandler,
-		sender:     NewMessageSender(),
+		sender:     sender,
 		appID:      config.AppID,
 		appSecret:  config.AppSecret,
 		domain:     domain,
@@ -99,7 +105,7 @@ func (s *EventSubscriber) Subscribe(ctx context.Context) error {
 // createEventHandler creates the Lark event handler
 func (s *EventSubscriber) createEventHandler() func(ctx context.Context, event *larkevent.EventReq) error {
 	return func(ctx context.Context, event *larkevent.EventReq) error {
-		if event.Body == nil {
+		if event == nil || event.Body == nil {
 			return nil
 		}
 
@@ -154,6 +160,10 @@ func (s *EventSubscriber) handleMessageEvent(ctx context.Context, event *larkeve
 
 // sendReply sends a reply message back to Lark
 func (s *EventSubscriber) sendReply(ctx context.Context, event *larkevent.EventReq, message string) error {
+	if event == nil || event.Body == nil {
+		return fmt.Errorf("nil event or event body")
+	}
+
 	// Extract chat_id and message_id from event
 	var rawData map[string]interface{}
 	if err := json.Unmarshal(event.Body, &rawData); err != nil {
