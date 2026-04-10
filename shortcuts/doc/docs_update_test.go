@@ -19,7 +19,7 @@ func TestBuildUpdateBody(t *testing.T) {
 		"str_replace":   true,
 		"str_delete":    true,
 		"block_delete":  true,
-		"block_insert":  true,
+		"block_insert_after":  true,
 		"block_replace": true,
 		"overwrite":     true,
 		"append":        true,

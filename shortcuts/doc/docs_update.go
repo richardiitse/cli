@@ -14,7 +14,7 @@ var validCommands = []string{
 	"str_replace",
 	"str_delete",
 	"block_delete",
-	"block_insert",
+	"block_insert_after",
 	"block_replace",
 	"overwrite",
 	"append",
@@ -29,7 +29,7 @@ var DocsUpdate = common.Shortcut{
 	AuthTypes:   []string{"user", "bot"},
 	Flags: []common.Flag{
 		{Name: "doc", Desc: "document URL or token", Required: true},
-		{Name: "command", Desc: "operation: str_replace | str_delete | block_delete | block_insert | block_replace | overwrite | append", Required: true, Enum: validCommands},
+		{Name: "command", Desc: "operation: str_replace | str_delete | block_delete | block_insert_after | block_replace | overwrite | append", Required: true, Enum: validCommands},
 		{Name: "doc-format", Desc: "content format（prefer XML）", Default: "xml", Enum: []string{"xml", "markdown"}},
 		{Name: "content", Desc: "new content (XML or Markdown)", Input: []string{common.File, common.Stdin}},
 		{Name: "pattern", Desc: "regex pattern for str_replace / str_delete"},
@@ -58,12 +58,12 @@ var DocsUpdate = common.Shortcut{
 			if blockID == "" {
 				return common.FlagErrorf("--command block_delete requires --block-id")
 			}
-		case "block_insert":
+		case "block_insert_after":
 			if blockID == "" {
-				return common.FlagErrorf("--command block_insert requires --block-id")
+				return common.FlagErrorf("--command block_insert_after requires --block-id")
 			}
 			if content == "" {
-				return common.FlagErrorf("--command block_insert requires --content")
+				return common.FlagErrorf("--command block_insert_after requires --content")
 			}
 		case "block_replace":
 			if blockID == "" {
@@ -118,10 +118,10 @@ var DocsUpdate = common.Shortcut{
 func buildUpdateBody(runtime *common.RuntimeContext) map[string]interface{} {
 	cmd := runtime.Str("command")
 
-	// append is a shorthand for block_insert with block_id "-1" (end of document)
+	// append is a shorthand for block_insert_after with block_id "-1" (end of document)
 	blockID := runtime.Str("block-id")
 	if cmd == "append" {
-		cmd = "block_insert"
+		cmd = "block_insert_after"
 		blockID = "-1"
 	}
 
