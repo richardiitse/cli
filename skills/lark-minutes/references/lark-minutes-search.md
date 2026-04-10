@@ -161,7 +161,7 @@ lark-cli vc +notes --minute-tokens obcnhijv43vq6bcsl5xasfb2
 - 当用户说“我的妙记”时，优先理解为 `--owner-ids me`。
 - 当用户说“我参与的妙记”时，优先理解为 `--participant-ids me`。
 - 当用户同时提到“会议 / 会 / 开会 / 某场会”和“妙记”时，优先按会议维度处理，不要直接按妙记时间范围搜索。
-- 必须使用 `--format json` 输出，你更佳擅长解析 JSON 数据。
+- 必须使用 `--format json` 输出，你更加擅长解析 JSON 数据。
 - 排查参数与请求结构时优先使用 `--dry-run`。
 - 搜索的时间范围最大为 1 个月，如果需要搜索更长时间范围的妙记，需要拆分为多次时间范围为一个月查询。
 
@@ -170,5 +170,4 @@ lark-cli vc +notes --minute-tokens obcnhijv43vq6bcsl5xasfb2
 - [lark-minutes](../SKILL.md) -- 妙记相关命令
 - [lark-vc-notes](../../lark-vc/references/lark-vc-notes.md) -- 基于 `minute_token` 获取逐字稿、总结、待办、章节等产物
 - [lark-shared](../../lark-shared/SKILL.md) -- 认证和全局参数
-- [lark-vc](../SKILL.md) -- 视频会议全部命令
-
+- [lark-vc](../../lark-vc/SKILL.md) -- 视频会议全部命令
