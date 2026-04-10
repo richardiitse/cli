@@ -45,7 +45,7 @@ func newCmdBotStart(opts *BotOptions) *cobra.Command {
 // botStartRun executes the bot start command.
 func botStartRun(opts *BotStartOptions) error {
 	f := opts.Factory
-	ctx := opts.Ctx
+	_ = opts.Ctx // TODO: pass to WebSocket/event subscriber
 
 	// TODO: 实现完整的 Bot 启动逻辑
 	// 1. 加载配置
