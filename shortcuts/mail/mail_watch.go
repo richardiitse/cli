@@ -209,15 +209,6 @@ var MailWatch = common.Shortcut{
 			if err := vfs.MkdirAll(outputDir, 0700); err != nil {
 				return fmt.Errorf("cannot create output directory %q: %w", outputDir, err)
 			}
-			// TOCTOU mitigation: after MkdirAll the directory now exists, so
-			// re-validate with the original relative path. SafeOutputPath will
-			// EvalSymlinks on the now-existing directory and re-verify CWD
-			// containment. This catches symlink replacement between mkdir and
-			// the first write.
-			outputDir, err = validate.SafeOutputPath(runtime.Str("output-dir"))
-			if err != nil {
-				return err
-			}
 		}
 		labelIDsInput := runtime.Str("label-ids")
 		folderIDsInput := runtime.Str("folder-ids")
