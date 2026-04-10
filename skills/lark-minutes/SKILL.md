@@ -24,6 +24,7 @@ metadata:
 1. 当用户描述的是"我的妙记""包含某个关键词的妙记""某段时间内的妙记"，优先使用 `minutes +search`。
 2. 仅支持使用关键词、时间段、参与者、所有者等筛选条件搜索妙记记录，对于不支持的筛选条件，需要提示用户。
 3. 搜索结果存在多条数据时，务必注意分页数据获取，不要遗漏任何妙记记录。
+4. 如果是会议的妙记，应优先使用 [vc +search](../lark-vc/references/lark-vc-search.md) 先定位会议，再按需通过 [vc +recording](../lark-vc/references/lark-vc-recording.md) 获取 `minute_token`。
 
 
 ### 2. 查看妙记基础信息
@@ -76,7 +77,6 @@ Minutes (妙记) ← minute_token 标识
 > - 用户说"这个妙记的标题 / 时长 / 封面 / 链接" → `minutes minutes get`
 > - 用户说"下载这个妙记的视频 / 音频 / 媒体文件" → `minutes +download`
 > - 用户说"这个妙记的逐字稿 / 总结 / 待办 / 章节" → 使用 [vc +notes --minute-tokens](../lark-vc/references/lark-vc-notes.md)
-> - 用户说"未来会议 / 之后的会议安排 / 还没开始的会议" → 不属于 `minutes`，应改走日历或会议能力
 
 ## Shortcuts（推荐优先使用）
 
