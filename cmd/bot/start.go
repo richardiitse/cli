@@ -68,16 +68,5 @@ func botStartRun(opts *BotStartOptions) error {
 	// 设置信号监听（用于优雅退出）
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	// 如果不是 daemon 模式，等待信号
-	if !opts.Daemon {
-		fmt.Fprintf(f.IOStreams.Out, "\n按 Ctrl+C 停止 Bot\n")
-		<-sigChan
-		fmt.Fprintf(f.IOStreams.Out, "\n=== Bot 已停止 ===\n")
-		return nil
-	}
-
-	// Daemon 模式：后台运行
-	// TODO: 实现 daemon 模式（fork 进程、PID 文件等）
-	return errors.New("daemon 模式尚未实现")
+	defer signal.Stop(sigChan)
 }
