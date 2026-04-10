@@ -14,21 +14,36 @@ metadata:
 
 **CRITICAL — 生成任何 XML 之前，MUST 先用 Read 工具读取 [xml-schema-quick-ref.md](references/xml-schema-quick-ref.md)，禁止凭记忆猜测 XML 结构。**
 
+## 身份选择
+
+飞书幻灯片通常是用户自己的内容资源。**默认应优先显式使用 `--as user`（用户身份）执行 slides 相关操作**，不要依赖 `auto` 猜测身份。
+
+- **`--as user`（推荐）**：以当前登录用户身份创建、读取、管理演示文稿。执行前先完成用户授权：
+
+```bash
+lark-cli auth login --domain slides
+```
+
+- **`--as bot`**：仅在用户明确要求以应用身份操作，或需要让 bot 持有/创建资源时使用。使用 bot 身份时，要额外确认 bot 是否真的有目标演示文稿的访问权限。
+
+**执行规则**：
+
+1. 创建、读取、增删 slide、按用户给出的链接继续编辑已有 PPT，默认都先用 `--as user`。
+2. 如果出现权限不足，先检查当前是否误用了 bot 身份；不要默认回退到 bot。
+3. 只有在用户明确要求“用应用身份 / bot 身份操作”，或当前工作流就是 bot 创建资源后再做协作授权时，才切换到 `--as bot`。
+
 ## 快速开始
 
 两条命令创建一个包含一页的 PPT：
 
 ```bash
-# 第 1 步：创建空白 PPT
-lark-cli slides xml_presentations create --data '{
-  "xml_presentation": {
-    "content": "<presentation xmlns=\"http://www.larkoffice.com/sml/2.0\" width=\"960\" height=\"540\"><title>演示文稿标题</title></presentation>"
-  }
-}'
+# 第 1 步：创建空白 PPT（推荐使用 +create shortcut）
+lark-cli slides +create --title "演示文稿标题"
 # 返回 xml_presentation_id，后续步骤需要用到
 
 # 第 2 步：添加一页 slide（将 YOUR_ID 替换为上一步返回的 xml_presentation_id）
-lark-cli slides xml_presentation.silde create \
+lark-cli slides xml_presentation.slide create \
+  --as user \
   --params '{"xml_presentation_id":"YOUR_ID"}' \
   --data '{
     "slide": {
@@ -75,7 +90,7 @@ Step 1: 需求澄清 & 读取知识
 Step 2: 生成大纲 → 用户确认 → 逐页创建
   - 生成结构化大纲（每页标题 + 要点 + 布局描述），交给用户确认
   - 用户确认或调整后，开始创建：
-    · xml_presentations.create 创建空白 PPT（仅传标题和尺寸）
+    · slides +create 创建空白 PPT
     · xml_presentation.slide.create 逐页添加 slide
   - 每页 slide 需要完整的 XML：背景、文本、图形、配色
   - 复杂元素（table、chart）需参考 XSD 原文
@@ -93,7 +108,8 @@ Step 3: 审查 & 交付
 使用 `jq` 包装 XML 可以避免手动转义双引号，推荐所有 slide 创建都用此方式：
 
 ```bash
-lark-cli slides xml_presentation.silde create \
+lark-cli slides xml_presentation.slide create \
+  --as user \
   --params '{"xml_presentation_id":"YOUR_ID"}' \
   --data "$(jq -n --arg content '<slide xmlns="http://www.larkoffice.com/sml/2.0">
   <style><fill><fillColor color="BACKGROUND_COLOR"/></fill></style>
@@ -165,7 +181,7 @@ N. 结尾页：[结尾文案]
 
 1. **使用 `wiki.spaces.get_node` 查询节点信息**
    ```bash
-   lark-cli wiki spaces get_node --params '{"token":"wiki_token"}'
+   lark-cli wiki spaces get_node --as user --params '{"token":"wiki_token"}'
    ```
 
 2. **从返回结果中提取关键信息**
@@ -179,7 +195,7 @@ N. 结尾页：[结尾文案]
 
 ```bash
 # 查询 wiki 节点
-lark-cli wiki spaces get_node --params '{"token":"OFG3w29CWiB0xNkVvhEcC2ynnAg"}'
+lark-cli wiki spaces get_node --as user --params '{"token":"OFG3w29CWiB0xNkVvhEcC2ynnAg"}'
 ```
 
 返回结果示例：
@@ -197,7 +213,7 @@ lark-cli wiki spaces get_node --params '{"token":"OFG3w29CWiB0xNkVvhEcC2ynnAg"}'
 
 ```bash
 # 用 obj_token 读取幻灯片内容
-lark-cli slides xml_presentations get --params '{"xml_presentation_id":"CaABs8G8Kl5UoDd9y7xcwjz9ndd"}'
+lark-cli slides xml_presentations get --as user --params '{"xml_presentation_id":"CaABs8G8Kl5UoDd9y7xcwjz9ndd"}'
 ```
 
 ### 资源关系
@@ -213,6 +229,14 @@ Slides (演示文稿)
 └── Slide (幻灯片页面)
     └── slide_id (页面唯一标识)
 ```
+
+## Shortcuts（推荐优先使用）
+
+Shortcut 是对常用操作的高级封装（`lark-cli slides +<verb> [flags]`）。有 Shortcut 的操作优先使用。
+
+| Shortcut | 说明 |
+|----------|------|
+| [`+create`](references/lark-slides-create.md) | 创建空白 PPT，bot 模式自动授权 |
 
 ## API Resources
 
@@ -236,7 +260,7 @@ lark-cli slides <resource> <method> [flags]  # 调用 API
 ## 核心规则
 
 1. **先出大纲再动手**：创建 PPT 前先生成大纲交给用户确认，避免返工
-2. **创建流程必须分两步**：`xml_presentations.create` 只建空白 PPT，页面内容用 `xml_presentation.silde.create` 逐页添加
+2. **创建流程必须分两步**：`slides +create`（或 `xml_presentations.create`）只建空白 PPT，页面内容用 `xml_presentation.slide.create` 逐页添加
 3. **`<slide>` 直接子元素只有 `<style>`、`<data>`、`<note>`**：文本和图形必须放在 `<data>` 内
 4. **文本通过 `<content>` 表达**：必须用 `<content><p>...</p></content>`，不能把文字直接写在 shape 内
 5. **保存关键 ID**：后续操作需要 `xml_presentation_id`、`slide_id`、`revision_id`
@@ -246,6 +270,7 @@ lark-cli slides <resource> <method> [flags]  # 调用 API
 
 | 方法 | 所需 scope |
 |------|-----------|
+| `slides +create` | `slides:presentation:create` |
 | `xml_presentations.create` | `slides:presentation:create` |
 | `xml_presentations.get` | `slides:presentation:read` |
 | `xml_presentation.slide.create` | `slides:presentation:update` 或 `slides:presentation:write_only` |
@@ -294,6 +319,7 @@ lark-cli slides <resource> <method> [flags]  # 调用 API
 
 | 文档 | 说明 |
 |------|------|
+| [lark-slides-create.md](references/lark-slides-create.md) | **+create Shortcut：创建空白 PPT** |
 | [xml-schema-quick-ref.md](references/xml-schema-quick-ref.md) | **XML Schema 精简速查（必读）** |
 | [slide-templates.md](references/slide-templates.md) | 可复制的 Slide XML 模板 |
 | [xml-format-guide.md](references/xml-format-guide.md) | XML 详细结构与示例 |
