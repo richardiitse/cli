@@ -47,8 +47,8 @@ func NewCmdBot(f *cmdutil.Factory) *cobra.Command {
 	}
 
 	cmd.AddCommand(newCmdBotStart(opts))
-	cmd.AddCommand(newCmdBotStatus(opts))
-	cmd.AddCommand(newCmdBotStop(opts))
+	cmd.AddCommand(newCmdBotStatus(&BotStatusOptions{Factory: opts.Factory}))
+	cmd.AddCommand(newCmdBotStop(&BotStopOptions{Factory: opts.Factory}))
 
 	return cmd
 }
