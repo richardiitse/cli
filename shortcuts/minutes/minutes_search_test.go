@@ -110,10 +110,10 @@ func TestBuildMinutesSearchParams(t *testing.T) {
 		t.Fatalf("buildMinutesSearchBody() unexpected error: %v", err)
 	}
 
-	if got := params.Get("page_size"); got != "5" {
+	if got, _ := params["page_size"].(string); got != "5" {
 		t.Fatalf("page_size = %q, want 5", got)
 	}
-	if got := params.Get("page_token"); got != "next_page" {
+	if got, _ := params["page_token"].(string); got != "next_page" {
 		t.Fatalf("page_token = %q, want next_page", got)
 	}
 	if body["query"] != "budget" {
@@ -150,7 +150,7 @@ func TestBuildMinutesSearchParamsDefaultPageSize(t *testing.T) {
 	cmd := newMinutesSearchTestCommand()
 
 	params := buildMinutesSearchParams(common.TestNewRuntimeContext(cmd, defaultConfig()))
-	if got := params.Get("page_size"); got != "15" {
+	if got, _ := params["page_size"].(string); got != "15" {
 		t.Fatalf("page_size = %q, want 15", got)
 	}
 }

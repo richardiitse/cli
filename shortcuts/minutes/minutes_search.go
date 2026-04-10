@@ -15,7 +15,6 @@ import (
 
 	"github.com/larksuite/cli/internal/output"
 	"github.com/larksuite/cli/shortcuts/common"
-	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 )
 
 const (
@@ -165,17 +164,17 @@ func buildMinutesSearchBody(runtime *common.RuntimeContext, startTime, endTime s
 }
 
 // buildMinutesSearchParams builds the query parameters for the search request.
-func buildMinutesSearchParams(runtime *common.RuntimeContext) larkcore.QueryParams {
-	params := larkcore.QueryParams{}
+func buildMinutesSearchParams(runtime *common.RuntimeContext) map[string]interface{} {
+	params := map[string]interface{}{}
 
 	pageSize := strings.TrimSpace(runtime.Str("page-size"))
 	if pageSize == "" {
 		pageSize = fmt.Sprintf("%d", defaultMinutesSearchPageSize)
 	}
-	params["page_size"] = []string{pageSize}
+	params["page_size"] = pageSize
 
 	if pageToken := strings.TrimSpace(runtime.Str("page-token")); pageToken != "" {
-		params["page_token"] = []string{pageToken}
+		params["page_token"] = pageToken
 	}
 
 	return params
@@ -296,16 +295,10 @@ var MinutesSearch = common.Shortcut{
 		if err != nil {
 			return common.NewDryRunAPI().Set("error", err.Error())
 		}
-		dryRunParams := map[string]interface{}{}
-		for key, values := range params {
-			if len(values) == 1 {
-				dryRunParams[key] = values[0]
-			}
-		}
 		dryRun := common.NewDryRunAPI().
 			POST("/open-apis/minutes/v1/minutes/search")
-		if len(dryRunParams) > 0 {
-			dryRun.Params(dryRunParams)
+		if len(params) > 0 {
+			dryRun.Params(params)
 		}
 		return dryRun.Body(body)
 	},
@@ -319,7 +312,7 @@ var MinutesSearch = common.Shortcut{
 			return err
 		}
 
-		data, err := runtime.DoAPIJSON(http.MethodPost, "/open-apis/minutes/v1/minutes/search", buildMinutesSearchParams(runtime), body)
+		data, err := runtime.CallAPI(http.MethodPost, "/open-apis/minutes/v1/minutes/search", buildMinutesSearchParams(runtime), body)
 		if err != nil {
 			return err
 		}
