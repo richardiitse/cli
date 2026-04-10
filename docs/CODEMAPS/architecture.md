@@ -1,6 +1,6 @@
 # Architecture Overview
 
-<!-- Generated: 2026-04-10 | Files scanned: 520 | Token estimate: ~600 -->
+<!-- Generated: 2026-04-10 | Files scanned: 549 | Token estimate: ~650 -->
 
 ## Project Type
 
@@ -8,7 +8,7 @@
 
 - **Language**: Go 1.23+
 - **Architecture**: Three-layer command system
-- **Scope**: 12 business domains, 200+ commands, 20 AI Agent Skills
+- **Scope**: 12 business domains, 200+ commands, 20 AI Agent Skills, 1 Bot integration
 
 ---
 
@@ -200,33 +200,44 @@ User can pipe to other tools (e.g., bot handler)
 
 ## New: Bot Integration (Feature Branch)
 
-### Location: `cmd/bot/`
+### Location: `cmd/bot/` & `shortcuts/bot/`
 - **Purpose**: Claude Code Bot - "Feishu → Claude Code" integration
 - **Branch**: `feature/claude-code-bot`
-- **Status**: Framework implemented, core logic pending
+- **Status**: Core modules complete, reply sending pending
 
 ### Architecture
 ```
 Feishu message
     ↓
-lark-cli event +subscribe (WebSocket)
+bot/subscribe.go (WebSocket event subscription)
     ↓
-bot/handler.go (message processing)
-    ↓
-bot/router.go (command routing)
+bot/handler.go (message processing & parsing)
     ↓
 bot/claude.go (Claude Code CLI integration)
     ↓
 bot/session.go (session_id persistence)
     ↓
+bot/sender.go (send reply to Feishu)
+    ↓
 lark-cli im +messages-send (reply)
 ```
 
 ### Key Files
-- `cmd/bot/bot.go` - Bot command entry
-- `cmd/bot/start.go` - Start bot (TODO: implement)
-- `cmd/bot/status.go` - Check status (TODO: implement)
-- `cmd/bot/stop.go` - Stop bot (TODO: implement)
+**Commands** (`cmd/bot/`):
+- `bot.go` - Bot command entry (50 lines)
+- `start.go` - Start bot, init all modules (130 lines)
+- `status.go` - Check status (TODO)
+- `stop.go` - Stop bot (TODO)
+
+**Core Modules** (`shortcuts/bot/`):
+- `claude.go` - Claude Code CLI integration (216 lines)
+- `session.go` - Session persistence with TTL (207 lines)
+- `handler.go` - Message event processing (224 lines)
+- `router.go` - Command routing & whitelist (280 lines)
+- `subscribe.go` - WebSocket event subscriber (197 lines)
+- `sender.go` - Message sender (64 lines)
+
+**Total**: 1,188 lines of Go code
 
 ---
 

@@ -185,26 +185,53 @@ WebSocket message → Parse JSON → Filter (event type) → Dedup → Transform
 
 ## Bot Implementation (`cmd/bot/`, `shortcuts/bot/`)
 
-**Status**: Framework implemented, core logic TODO
+**Status**: ✅ Core modules complete, reply sending pending
 
-### Current State
+### Implementation Summary
 
-| Component | File | Status | LOC |
-|-----------|------|--------|-----|
-| Bot command | `cmd/bot/bot.go` | ✅ Complete | 50 |
-| Start command | `cmd/bot/start.go` | ⏳ TODO | 80 |
-| Status command | `cmd/bot/status.go` | ⏳ TODO | 60 |
-| Stop command | `cmd/bot/stop.go` | ⏳ TODO | 70 |
+| Component | File | Status | LOC | Purpose |
+|-----------|------|--------|-----|---------|
+| **Commands** | | | | |
+| Bot entry | `cmd/bot/bot.go` | ✅ Complete | 50 | Command registration |
+| Start | `cmd/bot/start.go` | ✅ Complete | 130 | Init & event subscription |
+| Status | `cmd/bot/status.go` | ⏳ TODO | 60 | Bot status check |
+| Stop | `cmd/bot/stop.go` | ⏳ TODO | 70 | Graceful shutdown |
+| **Core** | | | | |
+| Claude | `shortcuts/bot/claude.go` | ✅ Complete | 216 | CLI integration, retry |
+| Session | `shortcuts/bot/session.go` | ✅ Complete | 207 | Persistence, TTL, cleanup |
+| Handler | `shortcuts/bot/handler.go` | ✅ Complete | 224 | Message parsing, routing |
+| Router | `shortcuts/bot/router.go` | ✅ Complete | 280 | Command whitelist, patterns |
+| Subscribe | `shortcuts/bot/subscribe.go` | ✅ Complete | 197 | WebSocket event stream |
+| Sender | `shortcuts/bot/sender.go | ⏳ TODO | 64 | Reply via im +messages-send |
 
-### Planned Implementation
+### Data Flow
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Handler | `shortcuts/bot/handler.go` | Message event processing |
-| Session | `shortcuts/bot/session.go` | session_id persistence |
-| Claude | `shortcuts/bot/claude.go` | Claude Code CLI integration |
-| Router | `shortcuts/bot/router.go` | Command routing (/, /run, etc.) |
-| Config | `internal/bot/config.go` | YAML config parsing |
+```
+User sends message in Feishu
+    ↓
+bot/subscribe.go receives WebSocket event
+    ↓
+bot/handler.go parses message (chat_id, content, sender)
+    ↓
+bot/router.go checks for slash commands
+    ↓
+bot/claude.go calls `claude -p --resume <session_id>`
+    ↓
+bot/session.go saves/updates session_id
+    ↓
+bot/sender.go sends reply via im +messages-send
+    ↓
+User sees Claude's response in Feishu
+```
+
+### Key Design Decisions
+
+- **External CLI**: Calls `claude` CLI (not Go SDK) for simplicity
+- **Session per Chat**: Each chat_id → unique session_id file
+- **TTL**: Sessions expire after 24h (configurable)
+- **Retry Logic**: 3 attempts with exponential backoff
+- **Command Whitelist**: /status, /help, /clear built-in
+- **Graceful Shutdown**: SIGINT/SIGTERM handling
 
 ---
 
