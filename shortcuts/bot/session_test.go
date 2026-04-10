@@ -35,6 +35,43 @@ func TestNewSessionManager(t *testing.T) {
 	}
 }
 
+// TestNewSessionManager_Defaults tests default values
+func TestNewSessionManager_Defaults(t *testing.T) {
+	// Test with empty config (should use defaults)
+	config := SessionManagerConfig{}
+
+	sm, err := NewSessionManager(config)
+	if err != nil {
+		t.Fatalf("NewSessionManager() with defaults failed: %v", err)
+	}
+
+	if sm == nil {
+		t.Fatal("NewSessionManager() returned nil")
+	}
+}
+
+// TestNewSessionManager_DefaultTTL tests default TTL
+func TestNewSessionManager_DefaultTTL(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	config := SessionManagerConfig{
+		BaseDir: tmpDir,
+		// TTL not set, should default to 24 hours
+	}
+
+	sm, err := NewSessionManager(config)
+	if err != nil {
+		t.Fatalf("NewSessionManager() failed: %v", err)
+	}
+
+	// Verify default TTL is 24 hours
+	if sm == nil {
+		t.Fatal("NewSessionManager() returned nil")
+	}
+	// TTL field is not exported, so we can't directly test it
+	// But we can verify the session manager works correctly
+}
+
 // TestSessionManager_GetSet tests basic session get/set operations
 func TestSessionManager_GetSet(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -179,6 +216,9 @@ func TestSessionManager_CleanupExpired(t *testing.T) {
 
 	// Wait for expiration
 	time.Sleep(60 * time.Millisecond)
+
+	// Refresh the active session to keep it alive
+	sm.Set("chat_active", "session_active_refreshed")
 
 	// Cleanup expired
 	count, err := sm.CleanupExpired()

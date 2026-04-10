@@ -214,8 +214,14 @@ func TestRouter_Route_CommandWithArgs(t *testing.T) {
 		DefaultHandler: handler,
 	})
 
+	// Register a custom command to test argument parsing
+	router.RegisterCommand("testcmd", func(ctx context.Context, args []string, chatID string) (string, error) {
+		argsReceived = args
+		return "handled", nil
+	})
+
 	// Route command with arguments
-	_, err := router.Route(context.Background(), "/status verbose", "chat123")
+	_, err := router.Route(context.Background(), "/testcmd verbose", "chat123")
 	if err != nil {
 		t.Fatalf("Route() failed: %v", err)
 	}

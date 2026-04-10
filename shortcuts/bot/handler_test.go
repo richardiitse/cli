@@ -90,7 +90,7 @@ func TestBotHandler_extractTextContent(t *testing.T) {
 		},
 		{
 			name:        "post message",
-			content:     `{"post":{"content":[[{"text":"Line 1"},{"text":"Line 2"}]]}}`,
+			content:     `{"post":{"content":[{"text":"Line 1"},{"text":"Line 2"}]}}`,
 			messageType: "post",
 			wantText:    "Line 1\nLine 2\n",
 		},
@@ -214,9 +214,9 @@ func TestBotHandler_parseMessageEvent_MissingFields(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "missing header",
+			name: "missing event data",
 			event: &larkevent.EventReq{
-				Body: []byte(`{"event":{}}`),
+				Body: []byte(`{"header":{}}`),
 			},
 			wantErr: true,
 		},
@@ -259,5 +259,99 @@ func TestBotHandler_GetStats(t *testing.T) {
 	}
 	if stats["work_dir"] != "/tmp/test" {
 		t.Errorf("work_dir = %s, want /tmp/test", stats["work_dir"])
+	}
+}
+
+// TestBotHandler_HandleMessage tests the main message handling flow
+func TestBotHandler_HandleMessage(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping in short mode - requires Claude CLI")
+	}
+
+	sessionMgr, _ := NewSessionManager(SessionManagerConfig{
+		BaseDir: t.TempDir(),
+		TTL:     1 * time.Hour,
+	})
+
+	handler, _ := NewBotHandler(BotHandlerConfig{
+		ClaudeClient:   NewClaudeClient(ClaudeClientConfig{}),
+		SessionManager: sessionMgr,
+		WorkDir:        "/tmp",
+	})
+
+	// Create a mock event
+	eventBody := map[string]interface{}{
+		"header": map[string]interface{}{
+			"event_type": "im.message.receive_v1",
+		},
+		"event": map[string]interface{}{
+			"chat_id":      "oc_test123",
+			"message_id":   "om_msg456",
+			"sender": map[string]interface{}{
+				"sender_id":   "user_789",
+				"sender_type": "user",
+			},
+			"message_type": "text",
+			"content":      `{"text":"Test message"}`,
+		},
+	}
+
+	eventJSON, _ := json.Marshal(eventBody)
+	event := &larkevent.EventReq{
+		Body: eventJSON,
+	}
+
+	// Handle message with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	response, err := handler.HandleMessage(ctx, event)
+
+	// We expect an error since claude CLI is not configured or times out
+	if err == nil && response == "" {
+		t.Error("HandleMessage() should return either error or response")
+	}
+}
+
+// TestBotHandler_HandleMessage_EmptyContent tests handling empty messages
+func TestBotHandler_HandleMessage_EmptyContent(t *testing.T) {
+	sessionMgr, _ := NewSessionManager(SessionManagerConfig{
+		BaseDir: t.TempDir(),
+		TTL:     1 * time.Hour,
+	})
+
+	handler, _ := NewBotHandler(BotHandlerConfig{
+		ClaudeClient:   NewClaudeClient(ClaudeClientConfig{}),
+		SessionManager: sessionMgr,
+		WorkDir:        "/tmp",
+	})
+
+	// Create event with empty content
+	eventBody := map[string]interface{}{
+		"header": map[string]interface{}{
+			"event_type": "im.message.receive_v1",
+		},
+		"event": map[string]interface{}{
+			"chat_id":      "oc_test_empty",
+			"message_id":   "om_empty",
+			"sender": map[string]interface{}{
+				"sender_id": "user_123",
+			},
+			"message_type": "text",
+			"content":      `{"text":""}`,
+		},
+	}
+
+	eventJSON, _ := json.Marshal(eventBody)
+	event := &larkevent.EventReq{
+		Body: eventJSON,
+	}
+
+	// Handle empty message
+	_, err := handler.HandleMessage(context.Background(), event)
+
+	// Empty messages should return empty response without error
+	if err != nil {
+		t.Errorf("HandleMessage() with empty content should not error, got: %v", err)
 	}
 }

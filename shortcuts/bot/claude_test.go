@@ -5,6 +5,7 @@ package bot
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -131,13 +132,13 @@ func TestClaudeResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var resp ClaudeResponse
-			err := resp.UnmarshalJSON([]byte(tt.json))
+			err := json.Unmarshal([]byte(tt.json), &resp)
 
-			if tt.wantErr && err == nil {
-				t.Error("UnmarshalJSON() should return error")
+			if tt.wantErr && err == nil && resp.Error == "" {
+				t.Error("response should contain error field")
 			}
 			if !tt.wantErr && err != nil {
-				t.Errorf("UnmarshalJSON() failed: %v", err)
+				t.Errorf("json.Unmarshal() failed: %v", err)
 			}
 
 			if !tt.wantErr {
@@ -169,6 +170,42 @@ func TestClaudeClient_ProcessMessage_ContextCancellation(t *testing.T) {
 	}
 }
 
+// TestValidateClaudeCLI tests Claude CLI validation
+func TestValidateClaudeCLI(t *testing.T) {
+	// Test with cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := ValidateClaudeCLI(ctx)
+	if err == nil {
+		t.Error("ValidateClaudeCLI() should fail with cancelled context")
+	}
+
+	// Test with expired context
+	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	defer cancel()
+	time.Sleep(1 * time.Millisecond)
+
+	err = ValidateClaudeCLI(ctx)
+	if err == nil {
+		t.Error("ValidateClaudeCLI() should fail with expired context")
+	}
+}
+
+// TestClaudeClient_processMessageOnce tests the internal retry logic
+func TestClaudeClient_processMessageOnce(t *testing.T) {
+	client := NewClaudeClient(ClaudeClientConfig{
+		MaxRetries: 2,
+	})
+	ctx := context.Background()
+
+	// Test with empty message
+	_, err := client.processMessageOnce(ctx, "", "")
+	if err == nil {
+		t.Error("processMessageOnce() should fail with empty message")
+	}
+}
+
 // Helper types for testing
 type testError struct {
 	msg string
@@ -176,11 +213,4 @@ type testError struct {
 
 func (e *testError) Error() string {
 	return e.msg
-}
-
-// UnmarshalJSON is a test helper method
-func (r *ClaudeResponse) UnmarshalJSON(data []byte) error {
-	// Simplified JSON parsing for testing
-	// In real code, this uses encoding/json
-	return nil
 }

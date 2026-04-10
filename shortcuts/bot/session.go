@@ -83,7 +83,8 @@ func (sm *SessionManager) Get(chatID string) (*SessionData, error) {
 
 	// Check if session has expired
 	if sm.isExpired(&session) {
-		_ = sm.Delete(chatID) // Clean up expired session
+		// Don't delete here to avoid deadlock (Get holds RLock, Delete needs Lock)
+		// Cleanup will be handled by CleanupExpired method
 		return nil, nil
 	}
 
@@ -185,15 +186,38 @@ func (sm *SessionManager) CleanupExpired() (int, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	sessions, err := sm.List()
+	// Read directory entries directly to avoid calling List (which needs RLock)
+	entries, err := os.ReadDir(sm.baseDir)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to read sessions directory: %w", err)
 	}
 
 	cleaned := 0
-	for _, session := range sessions {
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		// Extract chat ID from filename
+		chatID := strings.TrimSuffix(entry.Name(), ".json")
+		chatID = strings.ReplaceAll(chatID, "_", "/") // Reverse sanitization
+
+		// Read session file
+		sessionPath := sm.sessionPath(chatID)
+		data, err := os.ReadFile(sessionPath)
+		if err != nil {
+			continue
+		}
+
+		var session SessionData
+		if err := json.Unmarshal(data, &session); err != nil {
+			continue
+		}
+
+		// Check if expired and delete
 		if sm.isExpired(&session) {
-			if err := sm.Delete(session.ChatID); err == nil {
+			sessionPath := sm.sessionPath(chatID)
+			if err := os.Remove(sessionPath); err == nil {
 				cleaned++
 			}
 		}
