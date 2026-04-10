@@ -340,16 +340,16 @@ func TestMinutesSearchValidationQueryTooLong(t *testing.T) {
 	}
 }
 
-// TestMinutesSearchValidationMaxPageSize200 verifies the maximum allowed page size passes validation.
-func TestMinutesSearchValidationMaxPageSize200(t *testing.T) {
+// TestMinutesSearchValidationMaxPageSize30 verifies the maximum allowed page size passes validation.
+func TestMinutesSearchValidationMaxPageSize30(t *testing.T) {
 	cmd := newMinutesSearchTestCommand()
 	_ = cmd.Flags().Set("query", "budget")
-	_ = cmd.Flags().Set("page-size", "200")
+	_ = cmd.Flags().Set("page-size", "30")
 
 	runtime := common.TestNewRuntimeContext(cmd, defaultConfig())
 	err := MinutesSearch.Validate(context.Background(), runtime)
 	if err != nil {
-		t.Fatalf("expected no error for --page-size 200, got: %v", err)
+		t.Fatalf("expected no error for --page-size 30, got: %v", err)
 	}
 }
 
@@ -357,12 +357,12 @@ func TestMinutesSearchValidationMaxPageSize200(t *testing.T) {
 func TestMinutesSearchValidationPageSizeAboveMax(t *testing.T) {
 	cmd := newMinutesSearchTestCommand()
 	_ = cmd.Flags().Set("query", "budget")
-	_ = cmd.Flags().Set("page-size", "201")
+	_ = cmd.Flags().Set("page-size", "31")
 
 	runtime := common.TestNewRuntimeContext(cmd, defaultConfig())
 	err := MinutesSearch.Validate(context.Background(), runtime)
 	if err == nil {
-		t.Fatal("expected validation error for --page-size 201")
+		t.Fatal("expected validation error for --page-size 31")
 	}
 	if !strings.Contains(err.Error(), "--page-size") {
 		t.Fatalf("unexpected error: %v", err)

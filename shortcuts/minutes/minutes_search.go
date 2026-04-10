@@ -248,7 +248,7 @@ var MinutesSearch = common.Shortcut{
 		{Name: "start", Desc: "time lower bound (ISO 8601 or YYYY-MM-DD)"},
 		{Name: "end", Desc: "time upper bound (ISO 8601 or YYYY-MM-DD)"},
 		{Name: "page-token", Desc: "page token for next page"},
-		{Name: "page-size", Default: "15", Desc: "page size, 1-200 (default 15)"},
+		{Name: "page-size", Default: "15", Desc: "page size, 1-30 (default 15)"},
 	},
 	Validate: func(ctx context.Context, runtime *common.RuntimeContext) error {
 		if _, _, err := parseTimeRange(runtime); err != nil {
