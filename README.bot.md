@@ -48,11 +48,15 @@ lark-cli bot stop
 ### 1. 安装依赖
 
 ```bash
-# 需要 lark-cli (Go 1.23+)
-go install github.com/richardiitse/cli@latest
+# 编译 lark-cli (Go 1.23+)
+git clone https://github.com/richardiitse/cli.git
+cd cli && go build -o /usr/local/bin/lark-cli .
 
-# 需要 Claude Code CLI
+# 安装 Claude Code CLI
 npm install -g @anthropic-ai/claude-code
+
+# 安装 jq（Shell 脚本方案需要）
+brew install jq  # 或 apt install jq
 ```
 
 ### 2. 配置飞书应用
@@ -64,15 +68,24 @@ echo "YOUR_APP_SECRET" | lark-cli config init --app-id "cli_xxx" --app-secret-st
 
 ### 3. 启动 Bot
 
+**方式一：Go 版（推荐）**
+
 ```bash
-# 基础启动
+# 前台运行
 lark-cli bot start
 
-# 使用配置文件
-lark-cli bot start --config ~/.lark-cli/bot-config.yaml
+# 后台运行（pm2）
+pm2 start lark-cli -- bot start
+```
 
-# 后台运行
-lark-cli bot start --daemon
+**方式二：Shell 脚本（快速启动）**
+
+```bash
+# 前台运行
+bash scripts/lark-claude-bot.sh
+
+# 后台运行（pm2）
+pm2 start scripts/lark-claude-bot.sh --name lark-claude-bot --interpreter bash
 ```
 
 ### 4. 在飞书中使用
@@ -124,55 +137,67 @@ logging:
 ```
 飞书用户消息
     ↓
-lark-cli event +subscribe (WebSocket 长连接)
+EventSubscriber (WebSocket 长连接，shortcuts/bot/subscribe.go)
     ↓
-bot/handler.go (消息处理器)
+BotHandler.HandleMessage (消息解析，shortcuts/bot/handler.go)
     ↓
-bot/router.go (命令路由)
+Router.Route (命令路由，shortcuts/bot/router.go)
     ↓
-bot/claude.go (Claude Code 集成)
+ClaudeClient.ProcessMessage (Claude Code 调用，shortcuts/bot/claude.go)
     ↓
-bot/session.go (会话管理)
+SessionManager (会话持久化，shortcuts/bot/session.go)
     ↓
-lark-cli im +messages-send (回复飞书)
+MessageSender.SendMessage (回复飞书，shortcuts/bot/sender.go)
 ```
 
 ### 核心模块
 
 | 模块 | 文件 | 功能 |
 |------|------|------|
-| **命令入口** | `cmd/bot/` | bot 子命令定义 |
-| **消息处理** | `shortcuts/bot/handler.go` | 消息事件处理 |
-| **会话管理** | `shortcuts/bot/session.go` | session_id 持久化 |
-| **Claude 集成** | `shortcuts/bot/claude.go` | 调用 Claude Code |
-| **命令路由** | `shortcuts/bot/router.go` | 斜杠命令路由 |
-| **配置管理** | `internal/bot/config.go` | 配置文件解析 |
+| **命令入口** | `cmd/bot/` | bot 子命令定义（start/status/stop） |
+| **消息处理** | `shortcuts/bot/handler.go` | 消息事件处理、文本提取 |
+| **会话管理** | `shortcuts/bot/session.go` | session_id 持久化、TTL 管理 |
+| **Claude 集成** | `shortcuts/bot/claude.go` | 调用 Claude Code、重试机制 |
+| **命令路由** | `shortcuts/bot/router.go` | 斜杠命令路由、白名单 |
+| **消息发送** | `shortcuts/bot/sender.go` | Lark IM API 集成 |
+| **事件订阅** | `shortcuts/bot/subscribe.go` | WebSocket 长连接 |
 
 ---
 
 ## 🔧 开发计划
 
-### Phase 1: 核心 Bot 框架 ✅ 进行中
+### Phase 1: 核心 Bot 框架 ✅ 完成
 - [x] 创建 `cmd/bot/` 目录结构
-- [ ] 实现 `bot start` 子命令
-- [ ] 集成 `event +subscribe`
-- [ ] 实现基础消息处理循环
+- [x] 实现 `bot start/status/stop` 子命令
+- [x] 集成 `event +subscribe` WebSocket 事件订阅
+- [x] 实现基础消息处理循环
 
-### Phase 2: Claude Code 集成
-- [ ] 实现 `shortcuts/bot/claude.go`
-- [ ] 调用 `claude -p --resume`
-- [ ] 解析 JSON 输出
-- [ ] 错误处理和重试
+### Phase 2: Claude Code 集成 ✅ 完成
+- [x] 实现 `shortcuts/bot/claude.go`
+- [x] 调用 `claude -p --resume`
+- [x] 解析 JSON 输出（result + session_id）
+- [x] 错误处理和重试（指数退避）
 
-### Phase 3: 命令路由和扩展
-- [ ] 支持斜杠命令
-- [ ] 命令白名单机制
-- [ ] Shortcut 框架集成
+### Phase 3: 命令路由和扩展 ✅ 完成
+- [x] 支持斜杠命令（/run, /status, /help）
+- [x] 命令白名单机制
+- [x] 命令别名支持
 
-### Phase 4: 测试和优化
-- [ ] 单元测试
-- [ ] 集成测试
-- [ ] 性能优化
+### Phase 4: 测试和验证 ✅ 完成
+- [x] 单元测试（73%+ 覆盖率）
+- [x] 集成测试（WebSocket 事件订阅）
+- [x] race 条件检测
+- [x] 端到端验证（飞书收发消息 + Claude Code 回复）
+
+### Phase 5: 生产部署 🔄 进行中
+- [x] Shell 脚本方案验证（`scripts/lark-claude-bot.sh`）
+- [x] Go 版端到端验证（`lark-cli bot start`）
+- [ ] pm2 守护进程配置
+- [ ] 监控和告警
+
+---
+
+**状态**: Phase 1-4 已完成，Phase 5 生产部署进行中
 
 ---
 
@@ -226,7 +251,6 @@ MIT License (继承自 larksuite/cli)
 
 - **上游仓库**: https://github.com/larksuite/cli
 - **Fork 仓库**: https://github.com/richardiitse/cli
-- **开发分支**: feature/claude-code-bot
 - **Claude Code**: https://docs.anthropic.com/claude-code
 - **飞书开放平台**: https://open.feishu.cn/
 
@@ -239,5 +263,5 @@ MIT License (继承自 larksuite/cli)
 
 ---
 
-**当前版本**: 0.1.0-alpha (开发中)  
-**最后更新**: 2026-04-10
+**当前版本**: 1.0.0 (已合并到 main)  
+**最后更新**: 2026-04-11

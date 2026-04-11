@@ -1,6 +1,6 @@
 # Dependencies
 
-<!-- Generated: 2026-04-10 | Files scanned: 520 | Token estimate: ~600 -->
+<!-- Generated: 2026-04-11 | Files scanned: 560 | Token estimate: ~600 -->
 
 ## Go Module Dependencies
 
@@ -124,7 +124,7 @@
 | Tool | Purpose | Installation |
 |------|---------|--------------|
 | **claude** | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` |
-| **jq** | JSON parsing (alternative) | `brew install jq` |
+| **jq** | JSON parsing (shell script bot) | `brew install jq` |
 
 ### Deployment
 
@@ -132,7 +132,6 @@
 |------|---------|-------|
 | **pm2** | Process manager (daemon mode) | `npm install -g pm2` |
 | **systemd** | Linux service manager | Systemd unit files |
-| **Docker** | Containerization | Dockerfile (TODO) |
 
 ---
 

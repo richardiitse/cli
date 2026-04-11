@@ -145,14 +145,18 @@ func TestBotHandler_parseMessageEvent(t *testing.T) {
 			"create_time": "1234567890",
 		},
 		"event": map[string]interface{}{
-			"chat_id":    "oc_test123",
-			"message_id": "om_msg456",
+			"message": map[string]interface{}{
+				"chat_id":      "oc_test123",
+				"message_id":   "om_msg456",
+				"message_type": "text",
+				"content":      `{"text":"Test message"}`,
+			},
 			"sender": map[string]interface{}{
-				"sender_id":   "user_789",
+				"sender_id": map[string]interface{}{
+					"open_id": "ou_user789",
+				},
 				"sender_type": "user",
 			},
-			"message_type": "text",
-			"content":     `{"text":"Test message"}`,
 		},
 	}
 
@@ -172,8 +176,8 @@ func TestBotHandler_parseMessageEvent(t *testing.T) {
 	if msgEvent.MessageID != "om_msg456" {
 		t.Errorf("MessageID = %s, want om_msg456", msgEvent.MessageID)
 	}
-	if msgEvent.SenderID != "user_789" {
-		t.Errorf("SenderID = %s, want user_789", msgEvent.SenderID)
+	if msgEvent.SenderID != "ou_user789" {
+		t.Errorf("SenderID = %s, want ou_user789", msgEvent.SenderID)
 	}
 	if msgEvent.MessageType != "text" {
 		t.Errorf("MessageType = %s, want text", msgEvent.MessageType)
@@ -332,13 +336,17 @@ func TestBotHandler_HandleMessage_EmptyContent(t *testing.T) {
 			"event_type": "im.message.receive_v1",
 		},
 		"event": map[string]interface{}{
-			"chat_id":      "oc_test_empty",
-			"message_id":   "om_empty",
-			"sender": map[string]interface{}{
-				"sender_id": "user_123",
+			"message": map[string]interface{}{
+				"chat_id":      "oc_test_empty",
+				"message_id":   "om_empty",
+				"message_type": "text",
+				"content":      `{"text":""}`,
 			},
-			"message_type": "text",
-			"content":      `{"text":""}`,
+			"sender": map[string]interface{}{
+				"sender_id": map[string]interface{}{
+					"open_id": "ou_user123",
+				},
+			},
 		},
 	}
 

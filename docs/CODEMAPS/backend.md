@@ -1,6 +1,6 @@
 # Backend Implementation
 
-<!-- Generated: 2026-04-11 | Files scanned: 558 | Token estimate: ~800 -->
+<!-- Generated: 2026-04-11 | Files scanned: 560 | Token estimate: ~800 -->
 
 ## Command Routing
 
@@ -185,7 +185,7 @@ WebSocket message → Parse JSON → Filter (event type) → Dedup → Transform
 
 ## Bot Implementation (`cmd/bot/`, `shortcuts/bot/`)
 
-**Status**: ✅ Complete - All modules implemented, 85.1% test coverage
+**Status**: ✅ Verified - End-to-end tested with real Feishu messages
 
 ### Implementation Summary
 
@@ -201,19 +201,19 @@ WebSocket message → Parse JSON → Filter (event type) → Dedup → Transform
 | Session | `shortcuts/bot/session.go` | ✅ Complete | 207 | 90% |
 | Handler | `shortcuts/bot/handler.go` | ✅ Complete | 224 | 94% |
 | Router | `shortcuts/bot/router.go` | ✅ Complete | 280 | 95% |
-| Subscribe | `shortcuts/bot/subscribe.go` | ✅ Complete | 197 | 85% |
-| Sender | `shortcuts/bot/sender.go` | ✅ Complete | 64 | 100% |
+| Subscribe | `shortcuts/bot/subscribe.go` | ✅ Verified | 240 | 85% |
+| Sender | `shortcuts/bot/sender.go` | ✅ Verified | 127 | 100% |
 | **Tests** | | | | |
 | Unit tests | `*_test.go` | ✅ 7 files | ~800 | 85.1% |
 
 ### Data Flow
 
 ```
-Feishu message (WebSocket)
+Feishu message (WebSocket via oapi-sdk-go)
     ↓
 subscribe.go: createEventHandler() receives event
     ↓
-handler.go: parseMessageEvent() extracts chat_id, content, sender
+handler.go: parseMessageEvent() extracts from event.message.{chat_id, content, message_id}
     ↓
 router.go: Route() checks for slash commands (/status, /help, /clear)
     ↓
@@ -221,7 +221,7 @@ claude.go: ProcessMessage() calls `claude -p --resume <session_id>`
     ↓
 session.go: Set() persists session_id with TTL
     ↓
-sender.go: sendReply() sends via im +messages-send
+sender.go: SendMessage() sends via Lark IM SDK (Reply API)
     ↓
 User sees Claude's response in Feishu
 ```
@@ -249,12 +249,15 @@ Unit Tests (7 files):
 └── subscribe_integration_test.go - handleMessageEvent, sendReply
 ```
 
-### Fixed Bugs (During Testing)
+### Fixed Bugs (During Development and Testing)
 
 1. **Deadlock in Get()** - Removed Delete() call while holding RLock
 2. **Deadlock in CleanupExpired()** - Replaced List() call with direct directory read
 3. **Stack Overflow** - Removed recursive UnmarshalJSON helper
 4. **Nil Pointer** - Added nil checks in sendReply() and createEventHandler()
+5. **Keychain secret not resolved** - Changed `start.go` from `LoadMultiAppConfig()` to `RequireConfig(keychain)` for plain text secret
+6. **Event structure parsing** - Fixed to use `event.message.{chat_id, content}` instead of `event.{chat_id, content}` (Lark SDK nests message data under `event.message`)
+7. **Sender ID parsing** - Fixed to use `event.sender.sender_id.open_id` (nested object, not flat string)
 
 ---
 

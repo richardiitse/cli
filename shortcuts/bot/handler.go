@@ -104,42 +104,48 @@ func (h *BotHandler) parseMessageEvent(event *larkevent.EventReq) (*MessageEvent
 		return nil, fmt.Errorf("event data not found")
 	}
 
-	// Extract message fields
+	// Extract message fields — nested under event.message
+	msgData, ok := eventData["message"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("message data not found in event")
+	}
+
 	msgEvent := &MessageEvent{}
 
 	// Chat ID
-	if v, ok := eventData["chat_id"].(string); ok {
+	if v, ok := msgData["chat_id"].(string); ok {
 		msgEvent.ChatID = v
 	}
 
 	// Message ID
-	if v, ok := eventData["message_id"].(string); ok {
+	if v, ok := msgData["message_id"].(string); ok {
 		msgEvent.MessageID = v
 	}
 
-	// Sender ID
+	// Sender ID — nested under event.sender.sender_id
 	if sender, ok := eventData["sender"].(map[string]interface{}); ok {
-		if v, ok := sender["sender_id"].(string); ok {
-			msgEvent.SenderID = v
+		if senderID, ok := sender["sender_id"].(map[string]interface{}); ok {
+			if v, ok := senderID["open_id"].(string); ok {
+				msgEvent.SenderID = v
+			}
 		}
 		if v, ok := sender["sender_type"].(string); ok {
-			// Could filter by sender_type if needed
 			_ = v
 		}
 	}
 
 	// Message type
-	if v, ok := eventData["message_type"].(string); ok {
+	if v, ok := msgData["message_type"].(string); ok {
 		msgEvent.MessageType = v
 	}
 
 	// Message content (needs parsing based on message_type)
-	if v, ok := eventData["content"].(string); ok {
+	if v, ok := msgData["content"].(string); ok {
 		msgEvent.Content = h.extractTextContent(v, msgEvent.MessageType)
 	}
 
 	// Create time
-	if v, ok := eventData["create_time"].(string); ok {
+	if v, ok := msgData["create_time"].(string); ok {
 		msgEvent.CreateTime = v
 	}
 

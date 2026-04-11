@@ -5,6 +5,7 @@ package bot
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
@@ -213,5 +214,45 @@ func TestEventSubscriber_createEventHandler(t *testing.T) {
 	// Verify event count
 	if subscriber.eventCount != 3 {
 		t.Errorf("eventCount = %d, want 3", subscriber.eventCount)
+	}
+}
+
+// TestEventSubscriber_handleMessageEvent_EmptyResponse tests that empty responses don't send reply
+func TestEventSubscriber_handleMessageEvent_EmptyResponse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping in short mode - requires Claude CLI")
+	}
+
+	handler, _ := NewBotHandler(BotHandlerConfig{
+		ClaudeClient:   NewClaudeClient(ClaudeClientConfig{}),
+		SessionManager: nil,
+		WorkDir:        "/tmp",
+	})
+
+	subscriber := &EventSubscriber{
+		botHandler: handler,
+		sender:     NewMessageSender(), // nil client
+		quiet:      true,
+	}
+
+	// Create event with empty content that will result in empty response
+	eventBody := map[string]interface{}{
+		"header": map[string]interface{}{
+			"event_type": "im.message.receive_v1",
+		},
+		"event": map[string]interface{}{
+			"chat_id":      "oc_test123",
+			"message_id":   "om_msg456",
+			"message_type": "text",
+			"content":      `{"text":""}`,
+		},
+	}
+	eventJSON, _ := json.Marshal(eventBody)
+	event := &larkevent.EventReq{Body: eventJSON}
+
+	// Should not error even with empty message
+	err := subscriber.handleMessageEvent(context.Background(), event)
+	if err != nil {
+		t.Errorf("handleMessageEvent() returned error: %v", err)
 	}
 }

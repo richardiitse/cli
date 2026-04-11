@@ -1,6 +1,6 @@
 # Architecture Overview
 
-<!-- Generated: 2026-04-11 | Files scanned: 558 | Token estimate: ~650 -->
+<!-- Generated: 2026-04-11 | Files scanned: 560 | Token estimate: ~650 -->
 
 ## Project Type
 
@@ -198,28 +198,31 @@ User can pipe to other tools (e.g., bot handler)
 
 ---
 
-## New: Bot Integration (Feature Branch)
+## Bot Integration (Merged to main)
 
-### Location: `cmd/bot/` & `shortcuts/bot/`
+### Location: `cmd/bot/`, `shortcuts/bot/`, `scripts/`
 - **Purpose**: Claude Code Bot - "Feishu → Claude Code" integration
-- **Branch**: `feature/claude-code-bot`
-- **Status**: ✅ Complete - All modules implemented, 85.1% test coverage
+- **Branch**: `main` (merged)
+- **Status**: ✅ Verified - End-to-end tested with real Feishu messages
+- **Two approaches**:
+  1. Go version: `lark-cli bot start` (recommended, production-grade)
+  2. Shell script: `bash scripts/lark-claude-bot.sh` (quick start, fallback)
 
 ### Architecture
 ```
-Feishu message (WebSocket)
+Feishu message (WebSocket via oapi-sdk-go)
     ↓
-bot/subscribe.go (event subscription, eventCount tracking)
+bot/subscribe.go (SDK event dispatcher, SDK logger, graceful shutdown)
     ↓
-bot/handler.go (parseMessageEvent, extractTextContent)
+bot/handler.go (parseMessageEvent: event.message.content, event.sender.sender_id.open_id)
     ↓
 bot/router.go (command routing: /status, /help, /clear)
     ↓
-bot/claude.go (ProcessMessage with retry & backoff)
+bot/claude.go (ProcessMessage with retry & backoff, calls `claude -p --resume`)
     ↓
-bot/session.go (session persistence with TTL)
+bot/session.go (session persistence with TTL, file-based storage)
     ↓
-bot/sender.go (send reply via im +messages-send)
+bot/sender.go (send reply via Lark IM SDK API)
 ```
 
 ### Key Files
@@ -234,8 +237,8 @@ bot/sender.go (send reply via im +messages-send)
 - `session.go` - Session persistence with TTL, file-based storage (207 lines)
 - `handler.go` - Message event processing, text extraction (224 lines)
 - `router.go` - Command routing, whitelist, pattern matching (280 lines)
-- `subscribe.go` - WebSocket event subscriber, graceful shutdown (197 lines)
-- `sender.go` - Message sender, JSON content builder (64 lines)
+- `subscribe.go` - WebSocket event subscriber with SDK logger, graceful shutdown (240 lines)
+- `sender.go` - Message sender via Lark IM SDK, JSON content builder (127 lines)
 
 **Tests** (`shortcuts/bot/`):
 - `claude_test.go` - Claude client tests (ProcessMessage, retry logic)
@@ -246,7 +249,10 @@ bot/sender.go (send reply via im +messages-send)
 - `subscribe_test.go` - Event subscriber tests (info, error, debug methods)
 - `subscribe_integration_test.go` - Integration tests (handleMessageEvent, sendReply)
 
-**Total**: 1,188 lines Go code + 7 test files (85.1% coverage)
+**Total**: 1,188 lines Go code + 7 test files (85%+ coverage)
+
+**Shell Script** (`scripts/`):
+- `lark-claude-bot.sh` - Standalone shell script bot (uses `lark-cli event +subscribe --compact --quiet | jq`)
 
 ### Test Coverage
 | Module | Coverage |

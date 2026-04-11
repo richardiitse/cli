@@ -9,11 +9,34 @@ import (
 	"syscall"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
+	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkevent "github.com/larksuite/oapi-sdk-go/v3/event"
 	"github.com/larksuite/oapi-sdk-go/v3/event/dispatcher"
 	larkws "github.com/larksuite/oapi-sdk-go/v3/ws"
 	"github.com/larksuite/cli/internal/core"
 )
+
+// sdkLogger implements larkcore.Logger for bot debug output
+type sdkLogger struct {
+	quiet bool
+}
+
+func (l *sdkLogger) Debug(_ context.Context, args ...interface{}) {
+	fmt.Fprintln(os.Stderr, append([]interface{}{"[SDK Debug]"}, args...)...)
+}
+func (l *sdkLogger) Info(_ context.Context, args ...interface{}) {
+	if !l.quiet {
+		fmt.Fprintln(os.Stderr, append([]interface{}{"[SDK Info]"}, args...)...)
+	}
+}
+func (l *sdkLogger) Warn(_ context.Context, args ...interface{}) {
+	fmt.Fprintln(os.Stderr, append([]interface{}{"[SDK Warn]"}, args...)...)
+}
+func (l *sdkLogger) Error(_ context.Context, args ...interface{}) {
+	fmt.Fprintln(os.Stderr, append([]interface{}{"[SDK Error]"}, args...)...)
+}
+
+var _ larkcore.Logger = (*sdkLogger)(nil)
 
 // EventSubscriber manages Lark event subscription for the bot
 type EventSubscriber struct {
@@ -76,7 +99,7 @@ func NewEventSubscriber(config EventSubscriberConfig) *EventSubscriber {
 func (s *EventSubscriber) Subscribe(ctx context.Context) error {
 	// Create event dispatcher
 	eventDispatcher := dispatcher.NewEventDispatcher("", "")
-	eventDispatcher.InitConfig()
+	eventDispatcher.InitConfig(larkevent.WithLogger(&sdkLogger{quiet: s.quiet}))
 
 	// Register message event handler
 	rawHandler := s.createEventHandler()
@@ -86,6 +109,7 @@ func (s *EventSubscriber) Subscribe(ctx context.Context) error {
 	cli := larkws.NewClient(s.appID, s.appSecret.Plain,
 		larkws.WithEventHandler(eventDispatcher),
 		larkws.WithDomain(s.domain),
+		larkws.WithLogger(&sdkLogger{quiet: s.quiet}),
 	)
 
 	s.info("Connecting to Lark event WebSocket...")
@@ -189,8 +213,14 @@ func (s *EventSubscriber) sendReply(ctx context.Context, event *larkevent.EventR
 		return fmt.Errorf("event data not found")
 	}
 
-	chatID, _ := eventData["chat_id"].(string)
-	messageID, _ := eventData["message_id"].(string)
+	// Message fields are nested under event.message
+	msgData, ok := eventData["message"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("message data not found in event")
+	}
+
+	chatID, _ := msgData["chat_id"].(string)
+	messageID, _ := msgData["message_id"].(string)
 
 	if chatID == "" {
 		return fmt.Errorf("chat_id not found in event")
@@ -223,6 +253,5 @@ func (s *EventSubscriber) error(msg string) {
 
 // debug prints a debug message
 func (s *EventSubscriber) debug(msg string) {
-	// Only print in debug mode (TODO: add debug flag)
-	// fmt.Printf("[Debug] %s\n", msg)
+	// TODO: add debug flag to enable verbose logging
 }

@@ -5,14 +5,11 @@ package bot
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/larksuite/cli/internal/cmdutil"
 	"github.com/larksuite/cli/internal/core"
-	"github.com/larksuite/cli/internal/output"
 	"github.com/larksuite/cli/shortcuts/bot"
 	"github.com/spf13/cobra"
 )
@@ -99,25 +96,17 @@ func botStartRun(opts *BotStartOptions) error {
 	// 5. Initialize event subscriber
 	fmt.Fprintf(io.Out, "初始化事件订阅...\n")
 
-	// Load config
-	config, err := core.LoadMultiAppConfig()
+	// Load config with resolved secrets (from keychain if needed)
+	cfg, err := core.RequireConfig(f.Keychain)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return output.ErrWithHint(output.ExitValidation, "config", "not configured", "run: lark-cli config init")
-		}
 		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	app := config.CurrentAppConfig(f.Invocation.Profile)
-	if app == nil {
-		return output.ErrWithHint(output.ExitValidation, "config", "no active profile", "run: lark-cli profile list")
 	}
 
 	subscriber := bot.NewEventSubscriber(bot.EventSubscriberConfig{
 		BotHandler: botHandler,
-		AppID:      app.AppId,
-		AppSecret:  app.AppSecret,
-		Brand:      string(app.Brand),
+		AppID:      cfg.AppID,
+		AppSecret:  core.PlainSecret(cfg.AppSecret),
+		Brand:      string(cfg.Brand),
 		Quiet:      false,
 	})
 	fmt.Fprintf(io.Out, "✓ 事件订阅已初始化\n")
