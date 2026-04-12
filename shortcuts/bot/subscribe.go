@@ -123,7 +123,7 @@ func (s *EventSubscriber) createEventHandler() func(ctx context.Context, event *
 			return nil
 		}
 
-		s.eventCount++
+			atomic.AddInt64(&s.eventCount, 1)
 
 		// Parse event
 		var rawData map[string]interface{}
