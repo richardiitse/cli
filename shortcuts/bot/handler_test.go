@@ -70,11 +70,9 @@ func TestNewBotHandler_MissingSessionManager(t *testing.T) {
 
 // TestBotHandler_extractTextContent tests text content extraction
 func TestBotHandler_extractTextContent(t *testing.T) {
-	handler, _ := NewBotHandler(BotHandlerConfig{
-		ClaudeClient:   NewClaudeClient(ClaudeClientConfig{}),
-		SessionManager: nil, // OK for this test
-		WorkDir:        "/tmp",
-	})
+	// Use &BotHandler{} directly for helper-level tests that only exercise
+	// extractTextContent (doesn't touch receiver state)
+	handler := &BotHandler{}
 
 	tests := []struct {
 		name         string
@@ -185,11 +183,9 @@ func TestBotHandler_parseMessageEvent(t *testing.T) {
 
 // TestBotHandler_parseMessageEvent_MissingFields tests error handling for incomplete events
 func TestBotHandler_parseMessageEvent_MissingFields(t *testing.T) {
-	handler, _ := NewBotHandler(BotHandlerConfig{
-		ClaudeClient:   NewClaudeClient(ClaudeClientConfig{}),
-		SessionManager: nil,
-		WorkDir:        "/tmp",
-	})
+	// Use &BotHandler{} directly since parseMessageEvent only parses event data
+	// and doesn't require SessionManager or ClaudeClient
+	handler := &BotHandler{}
 
 	tests := []struct {
 		name     string

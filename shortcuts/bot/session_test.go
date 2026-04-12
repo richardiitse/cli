@@ -217,7 +217,8 @@ func TestSessionManager_CleanupExpired(t *testing.T) {
 	// Wait for expiration
 	time.Sleep(60 * time.Millisecond)
 
-	// Refresh the active session to keep it alive
+	// Refresh the active session AFTER the sleep to keep it alive.
+	// This updates its mtime so it won't be expired when CleanupExpired runs.
 	sm.Set("chat_active", "session_active_refreshed")
 
 	// Cleanup expired
